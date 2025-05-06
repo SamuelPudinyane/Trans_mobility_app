@@ -13,4 +13,6 @@ urlpatterns = [
     path('notifications/',views.notifications,name='notifications'),
     path('trip_data/',views.trip_data,name='trip_data'),
     path('driver_request/',views.driver_request,name='driver_request'),
+    path('map_location/',views.map_location,name='map_location'),
+    path('password_reset/',views.password_reset,name='password_reset'),
 ]
