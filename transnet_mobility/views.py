@@ -14,8 +14,39 @@ def login(request):
     #    user = authenticate(request, username=username, password=password)
         for user in users:
             if user is not None:
-                login(request, user)
-                return redirect('dashboard')  # Redirect to a dashboard or home page
+                if username in user['Email']:
+                    if password in user['Employee Number']:
+                        if user["Account Type"]=="Train Driver":
+                            Account_type="Train Driver"
+                            return render(request,'trip_data',Account_type)
+                        elif user["Account Type"]=="Assistant Drivers":
+                            Account_type="Assistant Drivers"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="Operational Managers":
+                            Account_type="Operational Managers"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="Corridor Managers":
+                            Account_type="Corridor Managers"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="IT Technicians":
+                            Account_type="IT Technicians"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="Logistics Coordinators":
+                            Account_type="Logistics Coordinators"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="Electrical Maintenance Team":
+                            Account_type="Electrical Maintenance Team"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="Mechanical Maintenance Team":
+                            Account_type="Mechanical Maintenance Team"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="Emergency Response Team":
+                            Account_type="Emergency Response Team"
+                            return redirect('trip_data')
+                        elif user["Account Type"]=="Locomotive Specialists":
+                            Account_type="Locomotive Specialists"
+                            return redirect('trip_data')
+                        
             else:
                 messages.error(request, "Invalid username or password.")
     return render(request, 'transnet_mobility/login.html')
@@ -64,7 +95,8 @@ def driver_request(request):
 def map_location(request):
     return render(request, 'transnet_mobility/map_location.html')
 
-
+def map_location_railway(request):
+    return render(request, 'transnet_mobility/map_location_railway.html')
 
 
 

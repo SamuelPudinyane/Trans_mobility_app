@@ -59,37 +59,48 @@
         </div>
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 d-none d-md-block sidebar">
-                <h2 class="mb-4">COMPANY NAME</h2>
-                
-                <div class="sidebar-item active">TRIP DATA CONFIGURATION</div>
-                <div class="sidebar-item">NOTIFICATIONS</div>
-            </div>
-
-            <!-- Mobile Sidebar Toggle -->
-            <nav class="navbar navbar-light bg-light d-md-none">
-                <div class="container-fluid">
-                    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <span class="navbar-brand">COMPANY NAME</span>
-                </div>
-            </nav>
-
-            <!-- Mobile Sidebar (Offcanvas) -->
-            <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="mobileSidebar">
-                <div class="offcanvas-header">
-                    <h5 class="offcanvas-title">Menu</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-                </div>
-                <div class="offcanvas-body">
-                    <div class="sidebar-item active">TRIP DATA CONFIGURATION</div>
-                    <div class="sidebar-item">NOTIFICATIONS</div>
-                </div>
-            </div>
+            <div class="col-md-3 sidebar p-3">
+        
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wagon_spec' %}'">CONFIGURE WAGON SPECIFICATIONS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'notifications' %}'">NOTIFICATIONS</button>
+                <button class="btn btn-light w-100 mb-2 active"  onclick="window.location.href='{% url 'all_users' %}'">VIEW ALL USERS</button>
+                <button class="btn btn-light w-100 mb-2">LOGOUT</button>
+              </div>
+           <!-- Mobile Sidebar Toggle -->
+           <nav class="navbar navbar-light bg-light d-md-none">
+              <div class="container-fluid">
+                  <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
+                      <span class="navbar-toggler-icon"></span>
+                  </button>
+                  <span class="navbar-brand">COMPANY NAME</span>
+              </div>
+          </nav>
+          
+          <!-- Mobile Sidebar (Offcanvas) -->
+          <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="mobileSidebar">
+              <div class="offcanvas-header">
+                  <h5 class="offcanvas-title">Menu</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+              </div>
+              <div class="offcanvas-body">
+                  <h4 class="mb-3">REGISTER NEW USERS</h4>
+                  <div class="sidebar-item">EDIT USER CREDENTIALS</div>
+                  <div class="sidebar-item">CONFIGURE LOCOMOTIVE SPECIFICATIONS</div>
+                  <div class="sidebar-item active">CONFIGURE WAGON SPECIFICATIONS</div>
+                  <div class="sidebar-item">CONFIGURE WHEEL SET SPECIFICATIONS</div>
+                  <div class="sidebar-item">NOTIFICATIONS</div>
+                  <div class="sidebar-item">VIEW ALL USERS</div>
+                  <div class="sidebar-item">LOGOUT</div>
+              </div>
+          </div>
 
             <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 main-content">
+            <div class="col-md-9 ">
                 <h2 class="section-title">TRIP DATA CONFIGURATION</h2>
                 
                 <div class="form-container">
