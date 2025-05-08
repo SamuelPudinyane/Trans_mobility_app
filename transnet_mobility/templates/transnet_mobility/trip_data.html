@@ -60,7 +60,11 @@
         <div class="row">
            <!-- Sidebar -->
     <div class="col-md-3 sidebar p-3">
+<<<<<<< HEAD
         {% if Account_type == 'Operational Manager' %}
+=======
+        
+>>>>>>> 0b941947489876343ee68b27d73f53f5ef394552
         <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
         <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
         <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
@@ -68,6 +72,7 @@
         <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
         <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</button>
         <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'notifications' %}'">NOTIFICATIONS</button>
+<<<<<<< HEAD
         <button class="btn btn-light w-100 mb-2 "  onclick="window.location.href='{% url 'all_users' %}'">VIEW ALL USERS</button>
         
         {% elif Account_type == 'Train Driver' or Account_type == 'Assistant Drivers'%}
@@ -75,6 +80,11 @@
         <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_request' %}'">REQUEST ASSISTANCE</button>
         
         {% endif %}
+=======
+        <button class="btn btn-light w-100 mb-2 active"  onclick="window.location.href='{% url 'trip_data' %}'">TRIP</button>
+        <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_request' %}'">REQUEST</button>
+        <button class="btn btn-light w-100 mb-2 active"  onclick="window.location.href='{% url 'all_users' %}'">VIEW ALL USERS</button>
+>>>>>>> 0b941947489876343ee68b27d73f53f5ef394552
         <button class="btn btn-light w-100 mb-2">LOGOUT</button>
       </div>
    <!-- Mobile Sidebar Toggle -->
