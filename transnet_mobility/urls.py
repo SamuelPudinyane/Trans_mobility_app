@@ -16,4 +16,8 @@ urlpatterns = [
     path('map_location/',views.map_location,name='map_location'),
     path('map_location_railway/',views.map_location_railway,name='map_location_railway'),
     path('password_reset/',views.password_reset,name='password_reset'),
+    path('fuel_matrics/',views.fuel_matrics,name='fuel_matrics'),
+    path('load_strategic/',views.load_strategic,name='load_strategic'),
+    path('route_and_node_preference/',views.route_and_node_preference,name='route_and_node_preference'),
+    path('route_corridor/',views.route_corridor,name='route_corridor'),
 ]

@@ -106,14 +106,31 @@ def driver_request(request):
 
 
 def map_location(request):
+    
     return render(request, 'transnet_mobility/map_location.html')
 
 def map_location_railway(request):
     return render(request, 'transnet_mobility/map_location_railway.html')
 
 
+def fuel_matrics(request):
+    user=request.session['user']
+    
+    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":
+        return render(request, 'transnet_mobility/fuel_matrics.html',{'Account_type':"Train Driver"})
+
+def route_and_node_preference(request):
+    user=request.session['user']
+    
+    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":
+        return render(request, 'transnet_mobility/route_and_node_preference.html',{'Account_type':"Train Driver"})
+
+def load_strategic(request):
+    return render(request, 'transnet_mobility/load_strategic.html')
 
 
+def route_corridor(request):
+    return render(request, 'transnet_mobility/route_corridor.html')
 
 
 

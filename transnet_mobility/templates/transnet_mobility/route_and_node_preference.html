@@ -24,15 +24,24 @@
             </div>
         </div>
         <div class="row">
-            <!-- Sidebar -->
             <div class="col-md-3 sidebar p-3">
-                
+                {% if Account_type == 'Operational Manager' %}
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'cargo_specs' %}'">CONFIGURE CARGO SPECIFICATIONS</button>
-                <button class="btn btn-light w-100 mb-2 active" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'notifications' %}'">NOTIFICATIONS</button>
-                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'all_users' %}'">VIEW ALL USERS</button>
+                <button class="btn btn-light w-100 mb-2 "  onclick="window.location.href='{% url 'all_users' %}'">VIEW ALL USERS</button>
+                
+                {% elif Account_type == 'Train Driver' or Account_type == 'Assistant Drivers'%}
+                <button class="btn btn-light w-100 mb-2 active"  onclick="window.location.href='{% url 'route_and_node_preference' %}'">ROUTE AND NODE PREFERENCE</button>
+                <button class="btn btn-light w-100 mb-2"  onclick="window.location.href='{% url 'fuel_matrics' %}'">FUEL MATRICS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_request' %}'">REQUEST ASSISTANCE</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'map_location' %}'">MAP LOCATION</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'map_location_railway' %}'">MAP LOCATION RAILWAY</button>
+                {% endif %}
                 <button class="btn btn-light w-100 mb-2">LOGOUT</button>
               </div>
 
@@ -54,7 +63,7 @@
                 </div>
                 <div class="offcanvas-body">
                     <div class="sidebar-item" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</div>
-                    <div class="sidebar-item active" onclick="window.location.href='{% url 'wagon_spec' %}'">CONFIGURE CARGO SPECIFICATIONS</div>
+                    <div class="sidebar-item active" onclick="window.location.href='{% url 'cargo_specs' %}'">CONFIGURE CARGO SPECIFICATIONS</div>
                     <div class="sidebar-item" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEEL SET SPECIFICATIONS</div>
                     <div class="sidebar-item" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</div>
                     <div class="sidebar-item">NOTIFICATIONS</div>
@@ -75,7 +84,7 @@
                             <div class="card-body">
                                 
                                 <div class="spec-item">
-                                    <label class="form-label fw-bold">Prefered Route Corridor </label>
+                                    <label class="form-label">Prefered Route Corridor </label>
                                     <input type="text" class="form-control" placeholder="eg: coal/manganese">
                                 </div>
                                 
@@ -89,12 +98,12 @@
                                   </div>
                                 
                                 <div class="spec-item">
-                                    <label class="form-label fw-bold">Delivery Node</label>
+                                    <label class="form-label">Delivery Node</label>
                                     <input type="text" class="form-control" placeholder="eg: Port / Yard">
                                 </div>
                                 
                                 <div class="spec-item">
-                                    <label class="form-label fw-bold">Receiving Facility</label>
+                                    <label class="form-label">Receiving Facility</label>
                                     <input type="text" class="form-control" placeholder="Receiving Facility">
                                 </div>
                                 
