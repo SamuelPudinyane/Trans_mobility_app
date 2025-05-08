@@ -178,5 +178,14 @@ users = [
         "Mobile Number": "0701234568",
         "Email": "amelia.clark@railway.co.za",
         "Account Type": "Locomotive Specialist"
+    },
+     {
+        "First Name": "Tshepang",
+        "Surname": "Makhambeni",
+        "ID Number": "9003054567082",
+        "Employee Number": "EMP2025",
+        "Mobile Number": "0723456789",
+        "Email": "mak@gmail.co.za",
+        "Account Type": "Administrator"
     }
 ]

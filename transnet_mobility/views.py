@@ -16,34 +16,38 @@ def login(request):
             if user is not None:
                 if username in user['Email']:
                     if password in user['Employee Number']:
-                        if user["Account Type"]=="Train Driver":
+                       
+                        request.session['user']=user
+                        if user['Account Type']=="Train Driver":
                             Account_type="Train Driver"
-                            return render(request,'trip_data',Account_type)
-                        elif user["Account Type"]=="Assistant Drivers":
+                            return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Train Driver"})
+                        
+                        elif user['Account Type']=="Assistant Driver":
                             Account_type="Assistant Drivers"
-                            return redirect('trip_data')
-                        elif user["Account Type"]=="Operational Managers":
+                            print("something crazy here ")
+                            return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Assistant Drivers"})
+                        elif user['Account Type']=="Operational Managers":
                             Account_type="Operational Managers"
                             return redirect('trip_data')
-                        elif user["Account Type"]=="Corridor Managers":
+                        elif user['Account Type']=="Corridor Managers":
                             Account_type="Corridor Managers"
                             return redirect('trip_data')
-                        elif user["Account Type"]=="IT Technicians":
+                        elif user['Account Type']=="IT Technicians":
                             Account_type="IT Technicians"
                             return redirect('trip_data')
-                        elif user["Account Type"]=="Logistics Coordinators":
+                        elif user['Account Type']=="Logistics Coordinators":
                             Account_type="Logistics Coordinators"
                             return redirect('trip_data')
-                        elif user["Account Type"]=="Electrical Maintenance Team":
+                        elif user['Account Type']=="Electrical Maintenance Team":
                             Account_type="Electrical Maintenance Team"
                             return redirect('trip_data')
-                        elif user["Account Type"]=="Mechanical Maintenance Team":
+                        elif user['Account Type']=="Mechanical Maintenance Team":
                             Account_type="Mechanical Maintenance Team"
                             return redirect('trip_data')
-                        elif user["Account Type"]=="Emergency Response Team":
+                        elif user['Account Type']=="Emergency Response Team":
                             Account_type="Emergency Response Team"
                             return redirect('trip_data')
-                        elif user["Account Type"]=="Locomotive Specialists":
+                        elif user['Account Type']=="Locomotive Specialists":
                             Account_type="Locomotive Specialists"
                             return redirect('trip_data')
                         
@@ -85,10 +89,19 @@ def notifications(request):
 
 
 def trip_data(request):
-    return render(request, 'transnet_mobility/trip_data.html')
+    
+    user=request.session['user']
+   
+    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":   
+        return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Assistant Drivers"})
+    
 
 def driver_request(request):
-    return render(request, 'transnet_mobility/driver_request.html')
+    user=request.session['user']
+    
+    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":
+        return render(request,'transnet_mobility/driver_request.html',{'Account_type':"Train Driver"})
+
 
 
 
