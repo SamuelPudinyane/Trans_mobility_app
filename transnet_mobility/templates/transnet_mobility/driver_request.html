@@ -69,7 +69,7 @@
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
-                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wagon_spec' %}'">CONFIGURE WAGON SPECIFICATIONS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'cargo_specs' %}'">CONFIGURE WAGON SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'notifications' %}'">NOTIFICATIONS</button>
@@ -89,7 +89,6 @@
                   <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
                       <span class="navbar-toggler-icon"></span>
                   </button>
-                  <span class="navbar-brand">COMPANY NAME</span>
               </div>
           </nav>
           
@@ -114,8 +113,11 @@
 
             <!-- Main Content -->
             <div class="col-md-9 p-4">
-                <h2 class="section-title">REQUEST AN ASSISTANCE</h2>
-                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="section-title">Request Assistance</h2>
+                    </div>
+                    <div class="card-body">
                 <div class="form-container">
                     <form>
                         <div class="mb-4">
@@ -128,6 +130,8 @@
                             <button type="submit" class="btn btn-primary">submit</button>
                         </div>
                     </form>
+                </div>
+                    </div>
                 </div>
             </div>
         </div>

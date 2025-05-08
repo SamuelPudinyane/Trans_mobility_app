@@ -34,7 +34,7 @@
       <button class="btn btn-light active w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
       <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
       <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
-      <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wagon_spec' %}'">CONFIGURE WAGON SPECIFICATIONS</button>
+      <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'cargo_specs' %}'">CONFIGURE CARGO SPECIFICATIONS</button>
       <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
       <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</button>
       <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'notifications' %}'">NOTIFICATIONS</button>
@@ -73,13 +73,6 @@
     <div class="col-md-9 p-4">
       <h4 class="mb-4">REGISTER NEW USERS</h4>
 
-      <!-- Search Section -->
-      <div class="search-box">
-        <div class="input-group">
-          <input type="text" class="form-control" placeholder="search registered user by ID / Email or employee number">
-          <button class="btn btn-outline-dark" type="button">search</button>
-        </div>
-      </div>
 
       <!-- Form Section -->
       <div class="form-box">

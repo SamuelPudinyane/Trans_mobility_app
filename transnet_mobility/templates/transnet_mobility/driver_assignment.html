@@ -29,7 +29,7 @@
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
-                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wagon_spec' %}'">CONFIGURE WAGON SPECIFICATIONS</button>
+                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'cargo_specs' %}'">CONFIGURE CARGO SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2 active" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'notifications' %}'">NOTIFICATIONS</button>
@@ -89,27 +89,27 @@
                                 <tr>
                                     <td>James Mokoena</td>
                                     <td>Assistant Driver</td>
-                                    <td><button type="button" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="1">Assign</button></td>
+                                    <td><button type="checkbox" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="1">Assign</button></td>
                                 </tr>
                                 <tr>
                                     <td>Thabo Ndlovu</td>
                                     <td>Driver</td>
-                                    <td><button type="button" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="2">Assign</button></td>
+                                    <td><button type="checkbox" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="2">Assign</button></td>
                                 </tr>
                                 <tr>
                                     <td>Lerato Dlamini</td>
                                     <td>Assistant Driver</td>
-                                    <td><button type="button" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="3">Assign</button></td>
+                                    <td><button type="checkbox" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="3">Assign</button></td>
                                 </tr>
                                 <tr>
                                     <td>Sipho Khumalo</td>
                                     <td>Driver</td>
-                                    <td><button type="button" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="4">Assign</button></td>
+                                    <td><button type="checkbox" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="4">Assign</button></td>
                                 </tr>
                                 <tr>
                                     <td>Nomsa Mabaso</td>
                                     <td>Driver</td>
-                                    <td><button type="button" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="5">Assign</button></td>
+                                    <td><button type="checkbox" class="btn btn-sm btn-outline-primary assign-btn" data-driver-id="5">Assign</button></td>
                                 </tr>
                             </tbody>
                         </table>

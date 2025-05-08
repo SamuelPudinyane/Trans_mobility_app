@@ -68,8 +68,8 @@ def register_user(request):
 def locomotive_config(request):
     return render(request, 'transnet_mobility/locomotive_config.html')
 
-def wagon_spec(request):
-    return render(request, 'transnet_mobility/wagon_spec.html')
+def cargo_specs(request):
+    return render(request, 'transnet_mobility/cargo_specs.html')
 
 
 def wheelset(request):

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wheel Set Specifications</title>
+    <title>Load Strategic</title>
     <link rel="stylesheet" href="style.css">
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -27,8 +27,6 @@
             <!-- Sidebar -->
             <div class="col-md-3 sidebar p-3">
                 
-                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
-                <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'cargo_specs' %}'">CONFIGURE CARGO SPECIFICATIONS</button>
                 <button class="btn btn-light w-100 mb-2 active" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEELSET SPECIFICATIONS</button>
@@ -55,11 +53,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
                 </div>
                 <div class="offcanvas-body">
-                    <h4 class="mb-3">REGISTER NEW USERS</h4>
-                    <div class="sidebar-item" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</div>
-                    <div class="sidebar-item" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</div>
                     <div class="sidebar-item" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</div>
-                    <div class="sidebar-item active" onclick="window.location.href='{% url 'wagon_spec' %}'">CONFIGURE WAGON SPECIFICATIONS</div>
+                    <div class="sidebar-item active" onclick="window.location.href='{% url 'wagon_spec' %}'">CONFIGURE CARGO SPECIFICATIONS</div>
                     <div class="sidebar-item" onclick="window.location.href='{% url 'wheelset' %}'">CONFIGURE WHEEL SET SPECIFICATIONS</div>
                     <div class="sidebar-item" onclick="window.location.href='{% url 'driver_assignment' %}'">DRIVERS</div>
                     <div class="sidebar-item">NOTIFICATIONS</div>
@@ -69,63 +64,48 @@
             </div>
             <!-- Main Content -->
             <div class="col-md-9 p-4">
-                <h2 class="section-title">WHEEL SET SPECIFICATION</h2>
+                <h2 class="section-title">ROUTE</h2>
                 
                 <div class="row">
                     <div class="col-md">
                         <div class="card ">
+                            <div class="card-header">
+                                <h5 class="card-title">Load And Strategy</h5>
+                            </div>
                             <div class="card-body">
-                                <h5 class="card-title">Specifications</h5>
+                                
                                 
                                 <div class="spec-item">
-                                    <label class="form-label fw-bold">WHEEL PROFILE</label>
-                                    <input type="text" class="form-control" placeholder="Enter wheel profile">
+                                    <label class="form-label fw-bold">Load Type</label>
+                                    <input type="text" class="form-control" placeholder="eg: coal/manganese">
                                 </div>
                                 
                                 <div class="spec-item">
-                                    <label class="form-label fw-bold">DIAMETER DIFFERENTIALS</label>
-                                    <input type="text" class="form-control" placeholder="Enter diameter differentials">
+                                    <label class="form-label fw-bold">Total Load</label>
+                                    <input type="text" class="form-control" placeholder="total in tons">
                                 </div>
                                 
                                 <div class="spec-item">
-                                    <label class="form-label fw-bold">SYMMETRY</label>
-                                    <input type="text" class="form-control" placeholder="Enter symmetry">
+                                    <label class="form-label fw-bold">Axle Load Limit</label>
+                                    <input type="text" class="form-control" placeholder="axle load limit in tons">
                                 </div>
                                 
                                 <div class="spec-item">
-                                    <label class="form-label fw-bold">BACK TO BACK DISTANCE</label>
-                                    <input type="text" class="form-control" placeholder="Enter back to back distance">
+                                    <label class="form-label fw-bold">Client Delivery Window</label>
+                                    <input type="text" class="form-control" placeholder="eg: 2025/05/05 08:00-14:00">
                                 </div>
                                 
-                                <div class="spec-item">
-                                    <label class="form-label fw-bold">RADIAL RUN OUT</label>
-                                    <input type="text" class="form-control" placeholder="Enter radial run out">
-                                </div>
+                                <div class="col-md-6 d-flex flex-column mb-3">
+                                    <label class="form-label">Weather Impact Forecast</label>
+                                    <select class="form-select">
+                                      <option selected disabled>select option</option>
+                                      <option>None</option>
+                                                      <option>Minor</option>
+                                                      <option>Severe</option>
+                                    </select>
+                                  </div>
                                 
-                                <div class="spec-item">
-                                    <label class="form-label fw-bold">AXIAL RUN OUT</label>
-                                    <input type="text" class="form-control" placeholder="Enter axial run out">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label fw-bold">WITNESS MARKS</label>
-                                    <input type="text" class="form-control" placeholder="Enter witness marks">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label fw-bold">SURFACE ROUGHNESS</label>
-                                    <input type="text" class="form-control" placeholder="Enter surface roughness">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label fw-bold">STENCILING</label>
-                                    <input type="text" class="form-control" placeholder="Enter stenciling">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label fw-bold">MAIN MACHINE DIAMETER</label>
-                                    <input type="text" class="form-control" placeholder="Enter main machine diameter">
-                                </div>
+                            
                             </div>
                         </div>
                     </div>
