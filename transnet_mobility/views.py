@@ -19,14 +19,13 @@ def login(request):
                        
                         request.session['user']=user
                         if user['Account Type']=="Train Driver":
-                            Account_type="Train Driver"
+                           
                             return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Train Driver"})
                         
                         elif user['Account Type']=="Assistant Driver":
-                            Account_type="Assistant Drivers"
-                            print("something crazy here ")
+                           
                             return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Assistant Drivers"})
-                        elif user['Account Type']=="Operational Managers":
+                        elif user['Account Type']=="Administrator":
                             Account_type="Operational Managers"
                             return redirect('trip_data')
                         elif user['Account Type']=="Corridor Managers":
