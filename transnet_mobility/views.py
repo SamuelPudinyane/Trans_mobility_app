@@ -20,11 +20,12 @@ def login(request):
                         request.session['user']=user
                         if user['Account Type']=="Train Driver":
                            
-                            return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Train Driver"})
+                            return render(request,'cargo_specs.html',{'Account_type':"Train Driver"})
                         
                         elif user['Account Type']=="Assistant Driver":
                            
-                            return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Assistant Drivers"})
+                            return render(request,'cargo_specs.html',{'Account_type':"Assistant Drivers"})
+                        
                         elif user['Account Type']=="Administrator":
                             Account_type="Operational Managers"
                             return redirect('trip_data')
@@ -52,84 +53,123 @@ def login(request):
                         
             else:
                 messages.error(request, "Invalid username or password.")
-    return render(request, 'transnet_mobility/login.html')
+    return render(request, 'login.html')
 
 
 def password_reset(request):
-    return render(request, 'transnet_mobility/password_reset.html')
+    return render(request, 'password_reset.html')
 
 def home(request):
-    return render(request, 'transnet_mobility/edit_user.html')
+    return render(request, 'edit_user.html')
 
 def register_user(request):
-    return render(request, 'transnet_mobility/register_user.html')
+    return render(request, 'register_user.html')
 
 def locomotive_config(request):
-    return render(request, 'transnet_mobility/locomotive_config.html')
+    user=request.session['user']
+    
+    if user['Account Type']=="Train Driver":
+        return render(request, 'locomotive_config.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'locomotive_config.html',{'Account_type':"Assistant Drivers"})
 
 def cargo_specs(request):
-    return render(request, 'transnet_mobility/cargo_specs.html')
+    user=request.session['user']
+    
+    if user['Account Type']=="Train Driver":
+        return render(request, 'cargo_specs.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'cargo_specs.html',{'Account_type':"Assistant Drivers"})
 
 
 def wheelset(request):
-    return render(request, 'transnet_mobility/wheelset.html')
+    user=request.session['user']
+    
+    if user['Account Type']=="Train Driver":
+        return render(request, 'wheelset.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'wheelset.html',{'Account_type':"Assistant Drivers"})
 
 def driver_assignment(request):
-    return render(request, 'transnet_mobility/driver_assignment.html')
+    return render(request, 'driver_assignment.html')
 
 
 def all_users(request):
-    return render(request, 'transnet_mobility/all_users.html')
+    return render(request, 'all_users.html')
 
 
 
 def notifications(request):
-    return render(request, 'transnet_mobility/notifications.html')
+    return render(request, 'notifications.html')
 
 
 def trip_data(request):
     
     user=request.session['user']
    
-    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":   
-        return render(request,'transnet_mobility/trip_data.html',{'Account_type':"Assistant Drivers"})
+    if user['Account Type']=="Train Driver":
+        return render(request, 'trip_data.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'trip_data.html',{'Account_type':"Assistant Drivers"})
     
 
 def driver_request(request):
     user=request.session['user']
     
-    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":
-        return render(request,'transnet_mobility/driver_request.html',{'Account_type':"Train Driver"})
+    if user['Account Type']=="Train Driver":
+        return render(request, 'driver_request.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'driver_request.html',{'Account_type':"Assistant Drivers"})
 
 
 
 
 def map_location(request):
+    user=request.session['user']
     
-    return render(request, 'transnet_mobility/map_location.html')
+    if user['Account Type']=="Train Driver":
+        return render(request, 'map_location.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'map_location.html',{'Account_type':"Assistant Drivers"})
+    
+   
 
 def map_location_railway(request):
-    return render(request, 'transnet_mobility/map_location_railway.html')
+    user=request.session['user']
+    
+    if user['Account Type']=="Train Driver":
+        return render(request, 'map_location_railway.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'map_location_railway.html',{'Account_type':"Assistant Drivers"})
 
 
 def fuel_matrics(request):
     user=request.session['user']
     
-    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":
-        return render(request, 'transnet_mobility/fuel_matrics.html',{'Account_type':"Train Driver"})
+    if user['Account Type']=="Train Driver":
+        return render(request, 'fuel_matrics.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'fuel_matrics.html',{'Account_type':"Assistant Drivers"})
 
 def route_and_node_preference(request):
     user=request.session['user']
     
-    if user['Account Type']=="Train Driver" or user['Account Type']=="Assistant Driver":
-        return render(request, 'transnet_mobility/route_and_node_preference.html',{'Account_type':"Train Driver"})
+    if user['Account Type']=="Train Driver":
+        return render(request, 'route_and_node_preference.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'route_and_node_preference.html',{'Account_type':"Assistant Drivers"})
 
 def load_strategic(request):
-    return render(request, 'transnet_mobility/load_strategic.html')
+    user=request.session['user']
+
+    if user['Account Type']=="Train Driver":
+        return render(request, 'load_strategic.html',{'Account_type':"Train Driver"})
+    elif user['Account Type']=="Assistant Driver":
+        return render(request, 'load_strategic.html',{'Account_type':"Assistant Drivers"})
 
 
 def route_corridor(request):
-    return render(request, 'transnet_mobility/route_corridor.html')
+    return render(request, 'route_corridor.html')
 
 
 

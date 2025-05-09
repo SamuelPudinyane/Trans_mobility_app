@@ -1,26 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Train Tracker - South Africa</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% extends 'base.html' %}
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+{% block title %}Train Tracker - South Africa{% endblock %}
+{% block content %}
 
-  <style>
-    #map {
-      height: 100vh;
-      width: 100%;
-    }
-    .custom-popup {
-      font-size: 14px;
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
+  <div id="map" class="mt-4"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -60,5 +43,4 @@
 
     showDeviceLocation();
   </script>
-</body>
-</html>
+{% endblock %}

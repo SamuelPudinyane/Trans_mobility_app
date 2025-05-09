@@ -1,0 +1,810 @@
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Transnet Freight Rail Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+          }
+          .custom-popup {
+            font-size: 14px;
+            font-weight: bold;
+          }
+        :root {
+            --transnet-green: #fdfdfd;
+            /* Transnet green */
+            --transnet-red: #E31937;
+            /* Transnet red */
+            --transnet-white: #FFFFFF;
+            /* White */
+            --transnet-dark: #333333;
+            /* Dark gray */
+            --transnet-light: #F5F5F5;
+            /* Light gray */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--transnet-light);
+            background-image: url('./images/back.png');
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            background-color: rgba(255, 255, 255, 0.384);
+            color: rgb(25, 23, 23);
+            height: 100vh;
+            position: fixed;
+            width: 250px;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            /* Added shadow */
+        }
+
+
+        .sidebar-header {
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(207, 41, 41, 0.15);
+            /* Added subtle shadow */
+        }
+
+
+        .sidebar-header img {
+            height: 90px;
+            width: 100px;
+            margin-right: 10px;
+        }
+
+        .sidebar-header h3 {
+            color: rgb(107, 189, 30);
+            margin: 0;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-menu {
+            padding: 0;
+            list-style: none;
+            max-height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+
+        .sidebar-menu li {
+            position: relative;
+        }
+
+        .sidebar-menu li a {
+            color: rgb(53, 52, 52);
+            padding: 12px 20px;
+            display: block;
+            font-size: 12.5px;
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu li a:hover {
+            background-color: rgba(214, 8, 8, 0.998);
+            border-left: 3px solid var(--transnet-red);
+        }
+
+
+
+        .sidebar-menu li a i {
+            margin-right: 10px;
+            color: rgb(145, 145, 6);
+        }
+
+        .sidebar-menu li a:hover i {
+            color: white;
+        }
+
+        .sidebar-menu li.active>a {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid var(--transnet-red);
+        }
+
+        .sidebar-dropdown {
+            background-color: rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .sidebar-dropdown.show {
+            display: block;
+        }
+
+        .sidebar-dropdown li a {
+            padding-left: 40px;
+        }
+
+        .sidebar-dropdown li a i {
+            font-size: 0.8rem;
+        }
+
+        /* Main content area */
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s;
+        }
+
+        .welcome-section {
+            background-color: #f0f4f8;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            background-image: url('./images/mmm.png');
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            margin-top: -20px;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+
+        .welcome-section h2 {
+            color: #d43535;
+            margin-bottom: 5px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .welcome-section p {
+            color: #555;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* Top navigation */
+        .top-nav {
+            /* background-color: white; */
+            /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); */
+            padding: 15px 5px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            margin-top: -30px;
+            margin-bottom: 30px;
+        }
+
+        h5 {
+            color: #333333;
+        }
+
+        .top-nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .top-nav-menu li {
+            margin-left: 20px;
+        }
+
+        .top-nav-menu li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 200;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .top-nav-menu li a:hover {
+            color: grey;
+        }
+
+        /* Dashboard cards */
+        .dashboard-card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2px;
+            transition: all 0.3s;
+            background-color: #a10d00;
+            border: none;
+            /* background-image: url('./images/Blue\ White\ Modern\ Business\ Infographic\ Presentation\ \(4\).png'); */
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .dashboard-card .card-body {
+            padding: 20px;
+        }
+
+        .dashboard-card .card-title {
+            color: white;
+            text-decoration: none;
+            font-weight: 400;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .dashboard-card .card-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgb(199, 200, 199);
+            margin-bottom: 5px;
+        }
+
+        .dashboard-card .card-icon {
+            font-size: 1.5rem;
+            color: rgb(107, 189, 30);
+            opacity: 0.8;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+
+        }
+
+        /* Filter section */
+        .filter-section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chart container */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .mega-container {
+            background-color: #ffffffba;
+            /* margin-top: -24px; */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+
+            .sidebar.active {
+                margin-left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .top-nav-menu {
+                justify-content: center;
+            }
+
+            .dashboard-card .card-value {
+                font-size: 1.5rem;
+            }
+
+            .dashboard-card .card-icon {
+                font-size: 2rem;
+            }
+        }
+
+        /* Transnet specific styling */
+        .btn-transnet {
+            background-color: var(--transnet-green);
+            color: white;
+            border: none;
+        }
+
+        .btn-transnet:hover {
+            background-color: var(--transnet-red);
+            color: white;
+        }
+
+        .bg-transnet-green {
+            background-color: var(--transnet-green);
+        }
+
+        .bg-transnet-red {
+            background-color: var(--transnet-red);
+        }
+
+        .text-transnet-green {
+            color: var(--transnet-green);
+        }
+
+        .text-transnet-red {
+            color: var(--transnet-red);
+        }
+
+        /* Custom chart styling */
+        .chart-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .chart-card .card-header {
+            background-color: white;
+            color: #333;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .card-icon {
+            color: green;
+          }
+          .welcome-section {
+            background-image: url("{% static 'images/mmm.png' %}");
+          }
+    </style>
+</head>
+
+<body>
+    <div class="mega-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <img src="{% static 'images/download-removebg-preview.png' %}" alt="Transnet Logo">
+                <h3>Freight <span>Rail</span></h3>
+            </div>
+            <ul class="sidebar-menu">
+                {% if Account_type == 'Train Driver' or Account_type == 'Assistant Drivers'%}
+                <li>
+                    <a href="#route-optimization" data-bs-toggle="collapse">
+                        <i class="fas fa-route"></i> Cargo, Locomotive and Wheelset Specifications
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="route-optimization" class="sidebar-dropdown collapse">
+                        <li><a href="{% url 'cargo_specs' %}"><i class="fas fa-chevron-right"></i> cargo Configuration</a></li>
+                        <li><a href="{% url 'locomotive_config' %}"><i class="fas fa-chevron-right"></i> Locomotive Configuration</a></li>
+                        <li><a href="{% url 'wheelset' %}"><i class="fas fa-chevron-right"></i> Wheelset Configuration</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#fuel-emissions" data-bs-toggle="collapse">
+                        <i class="fas fa-gas-pump"></i> Route and fuel configuration
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="fuel-emissions" class="sidebar-dropdown collapse">
+                        <li><a href="{% url 'route_and_node_preference' %}"><i class="fas fa-chevron-right"></i> Route and Node Preference</a></li>
+                        <li><a href="{% url 'fuel_matrics' %}"><i class="fas fa-chevron-right"></i>  Fuel utilization</a></li>
+                        <li><a href="{% url 'load_strategic' %}"><i class="fas fa-chevron-right"></i>  Load Strategic</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#crew-scheduling" data-bs-toggle="collapse">
+                        <i class="fas fa-users"></i>Request an Emergency 
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="crew-scheduling" class="sidebar-dropdown collapse">
+                        <li><a href="{% url 'driver_request' %}"><i class="fas fa-chevron-right"></i>Request Assistance</a></li>
+                        <li><a href=""><i class="fas fa-chevron-right"></i></a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#asset-utilization" data-bs-toggle="collapse">
+                        <i class="fas fa-map"></i>Live Location
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="asset-utilization" class="sidebar-dropdown collapse">
+                        <li><a href="{% url 'map_location' %}"><i class="fas fa-chevron-right"></i>Map </a></li>
+                        <li><a href="{% url 'map_location_railway' %}"><i class="fas fa-chevron-right"></i> Railway Map</a></li>
+                    </ul>
+                </li>
+                {% endif %}
+                <li>
+                    <a href="#yard-congestion" data-bs-toggle="collapse">
+                        <i class="fas fa-traffic-light"></i> Yard Congestion
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="yard-congestion" class="sidebar-dropdown collapse">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Yard Overflow</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#maintenance-slot" data-bs-toggle="collapse">
+                        <i class="fas fa-tools"></i> Maintenance Slot
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="maintenance-slot" class="sidebar-dropdown collapse">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Asset Maintenance</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#security-route" data-bs-toggle="collapse">
+                        <i class="fas fa-shield-alt"></i> Security Route
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="security-route" class="sidebar-dropdown collapse">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Safe Corridor</a></li>
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Time-of-delay</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#turnaround-time" data-bs-toggle="collapse">
+                        <i class="fas fa-stopwatch"></i> Turnaround Time
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="turnaround-time" class="sidebar-dropdown collapse">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Choke points</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#project-prioritization" data-bs-toggle="collapse">
+                        <i class="fas fa-project-diagram"></i> Project Prioritization
+                        <i class="fas fa-angle-down float-end"></i>
+                    </a>
+                    <ul id="project-prioritization" class="sidebar-dropdown collapse">
+                        <li><a href="#"><i class="fas fa-chevron-right"></i> Infrastructure Projects</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Content -->
+            <div class="container-fluid py-4">
+                <div class="welcome-section">
+                    <nav class="top-nav">
+                        <div class="container-fluid">
+                            <button class="btn btn-transnet d-md-none" id="sidebarToggle">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <ul class="top-nav-menu">
+                                <li><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                                <li><a href="#"><i class="fas fa-database"></i> Data Request</a></li>
+                                <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                    <br>
+                    <h2>Welcome to Our Platform!</h2>
+                    <p>We're glad to have you here. Explore our features and feel free to reach out if you need
+                        assistance.
+                    </p>
+                </div>
+
+                <!-- Dashboard Cards -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="dashboard-card card">
+                            <div class="card-body">
+                                <h5 class="card-title">Trains in Terminal</h5>
+                                <h2 class="card-value">8</h2>
+                                <i class="fas fa-train card-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="dashboard-card card">
+                            <div class="card-body">
+                                <h5 class="card-title">Wagons Processing</h5>
+                                <h2 class="card-value">143</h2>
+                                <i class="fas fa-boxes card-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="dashboard-card card">
+                            <div class="card-body">
+                                <h5 class="card-title">AVG. Dwell Time</h5>
+                                <h2 class="card-value">210 min</h2>
+                                <i class="fas fa-clock card-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="dashboard-card card">
+                            <div class="card-body">
+                                <h5 class="card-title">Throughput Value</h5>
+                                <h2 class="card-value">18 wagons/hr</h2>
+                                <i class="fas fa-tachometer-alt card-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="container">
+                {% block content %}
+
+                {% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Toggle sidebar on mobile
+        document.getElementById('sidebarToggle').addEventListener('click', function () {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function (event) {
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+
+            if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+                if (!sidebar.contains(event.target) && event.target !== sidebarToggle) {
+                    sidebar.classList.remove('active');
+                }
+            }
+        });
+
+        // Close dropdowns when clicking on menu items without dropdowns
+        document.querySelectorAll('.sidebar-menu > li > a').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                if (!this.getAttribute('data-bs-toggle')) {
+                    // Close all open dropdowns
+                    document.querySelectorAll('.sidebar-dropdown.show').forEach(function (dropdown) {
+                        dropdown.classList.remove('show');
+                    });
+
+                    // Remove active class from all menu items
+                    document.querySelectorAll('.sidebar-menu li').forEach(function (item) {
+                        item.classList.remove('active');
+                    });
+
+                    // Add active class to clicked item
+                    this.closest('li').classList.add('active');
+                }
+            });
+        });
+
+        // Create gradient for chart backgrounds
+        function createGradient(ctx, color1, color2) {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            return gradient;
+        }
+
+        // Initialize charts with custom colors
+        document.addEventListener('DOMContentLoaded', function () {
+            // Main Bar Chart
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            const barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [
+                        {
+                            label: 'Wagons Processed (thousands)',
+                            data: [45, 52, 48, 55, 60, 58],
+                            backgroundColor: '#a10d00',
+                            borderColor: '#a10d00',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Delays (hours)',
+                            data: [120, 95, 110, 85, 75, 90],
+                            backgroundColor: '#d9ddde',
+                            borderColor: '#d9ddde',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                drawOnChartArea: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Line Chart (On-Time Performance)
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            const lineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'On-Time Percentage',
+                        data: [82, 85, 88, 90],
+                        backgroundColor: 'rgba(221, 55, 51, 0.1)',
+                        borderColor: '#dd3733',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 75,
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function (value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Horizontal Bar Chart (Yard Utilization)
+            const horizontalBarCtx = document.getElementById('horizontalBarChart').getContext('2d');
+            const horizontalBarChart = new Chart(horizontalBarCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Main Yard', 'Freight Yard', 'Passenger Yard', 'Maintenance Yard'],
+                    datasets: [{
+                        label: 'Utilization Rate',
+                        data: [85, 72, 65, 55],
+                        backgroundColor: [
+                            '#a10d00',
+                            '#dd3733',
+                            '#d9ddde',
+                            '#a0a0a8'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.raw + '% utilization';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                callback: function (value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Stacked Bar Chart (Freight Distribution)
+            const stackedBarCtx = document.getElementById('stackedBarChart').getContext('2d');
+            const stackedBarChart = new Chart(stackedBarCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Coal', 'Iron Ore', 'Manganese', 'Other Minerals', 'Containers'],
+                    datasets: [
+                        {
+                            label: 'Gauteng',
+                            data: [15, 20, 10, 5, 25],
+                            backgroundColor: '#a10d00',
+                            borderColor: '#a10d00',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Western Cape',
+                            data: [5, 8, 12, 3, 30],
+                            backgroundColor: '#dd3733',
+                            borderColor: '#dd3733',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'KwaZulu-Natal',
+                            data: [10, 15, 8, 4, 35],
+                            backgroundColor: '#d9ddde',
+                            borderColor: '#d9ddde',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            grid: {
+                                drawOnChartArea: true,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function (value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
