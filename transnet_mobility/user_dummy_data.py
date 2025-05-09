@@ -187,5 +187,32 @@ users = [
         "mobile_number": "0723456789",
         "email": "mak@gmail.co.za",
         "account_type": "Administrator"
+    },
+    {
+        "first_name": "Tshepang",
+        "surname": "Makhambeni",
+        "ID_number": "9003054567082",
+        "employee_number": "EMP1002",
+        "mobile_number": "0723456789",
+        "email": "security@railway.co.za",
+        "account_type": "Security"
+    },
+    {
+        "first_name": "Tshepang",
+        "surname": "Makhambeni",
+        "ID_number": "9003054567082",
+        "employee_number": "EMP1020",
+        "mobile_number": "0723456789",
+        "email": "security_supervisor@railway.co.za",
+        "account_type": "Security Supervisor"
+    },
+     {
+        "first_name": "Tshepang",
+        "surname": "Makhambeni",
+        "ID_number": "9003054567082",
+        "employee_number": "EMP1021",
+        "mobile_number": "0723456789",
+        "email": "security_manager@railway.co.za",
+        "account_type": "Security Manager"
     }
 ]

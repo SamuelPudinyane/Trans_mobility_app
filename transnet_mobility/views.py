@@ -14,7 +14,7 @@ def login(request):
     #    user = authenticate(request, username=username, password=password)
         for user in users:
             if user is not None:
-                print(user)
+                
                 if username in user['email']:
                     if password in user['employee_number']:
                        
@@ -30,27 +30,13 @@ def login(request):
                         elif user['account_type']=="Administrator":
                             Account_type="Operational Managers"
                             return redirect('trip_data')
-                        elif user['account_type']=="Corridor Managers":
-                            Account_type="Corridor Managers"
-                            return redirect('trip_data')
-                        elif user['account_type']=="IT Technicians":
-                            Account_type="IT Technicians"
-                            return redirect('trip_data')
-                        elif user['account_type']=="Logistics Coordinators":
-                            Account_type="Logistics Coordinators"
-                            return redirect('trip_data')
-                        elif user['account_type']=="Electrical Maintenance Team":
-                            Account_type="Electrical Maintenance Team"
-                            return redirect('trip_data')
-                        elif user['account_type']=="Mechanical Maintenance Team":
-                            Account_type="Mechanical Maintenance Team"
-                            return redirect('trip_data')
-                        elif user['account_type']=="Emergency Response Team":
-                            Account_type="Emergency Response Team"
-                            return redirect('trip_data')
-                        elif user['account_type']=="Locomotive Specialists":
-                            Account_type="Locomotive Specialists"
-                            return redirect('trip_data')
+                        
+                        elif user['account_type']=="Security":
+                            return render(request, 'security_guard_report.html',{'Account_type':"Security"})
+                        
+                        elif user['account_type']=="Security Supervisor":
+                            Account_type=user['account_type']
+                            return render(request, 'security_supervisor.html',{'Account_type':Account_type})
                         
             else:
                 messages.error(request, "Invalid username or password.")
@@ -175,10 +161,47 @@ def route_corridor(request):
 
 def profile(request):
     profile=request.session['user']
-    print(profile)
+  
     Account_type=profile['account_type']
-    print(Account_type)
+
     return render(request,'profile.html',{"profile":profile,"Account_type":Account_type})
+
+
+def security_guard_report(request):
+    user=request.session['user']
+    Account_type=user['account_type']
+    return render(request, 'security_guard_report.html',{'Account_type':Account_type})
+
+def security_emergency_call(request):
+    user=request.session['user']
+    Account_type=user['account_type']
+    return render(request, 'security_emergency_call.html',{'Account_type':Account_type})
+
+def security_supervisor(request):
+    user=request.session['user']
+    Account_type=user['account_type']
+    return render(request, 'security_supervisor.html',{'Account_type':Account_type})
+
+
+def security_supervisor_call(request):
+    user=request.session['user']
+    Account_type=user['account_type']
+    return render(request, 'security_supervisor_call.html',{'Account_type':Account_type})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

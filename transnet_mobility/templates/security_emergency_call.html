@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Request Assistance{% endblock %}
+{% block content %}
+    <div class="container container-fluid">
+       
+        <div class="row">
+        
+
+            <!-- Main Content -->
+            <div class=" p-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="section-title">Request Assistance</h5>
+                    </div>
+                    <div class="card-body">
+                <div class="form-container">
+                    <form>
+                        <div class="mb-4">
+                            <label for="cameraInput" class="form-label">Capture Image</label>
+                            <div class="d-flex flex-column gap-2">
+                                <!-- Camera preview -->
+                                <video id="cameraPreview" autoplay playsinline class="d-none rounded border" style="max-height: 300px;"></video>
+                                <!-- Canvas for captured image -->
+                                <canvas id="imageCanvas" class="d-none rounded border" style="max-height: 300px;"></canvas>
+                                <!-- Hidden input to store the image data -->
+                                <input type="hidden" id="capturedImageData" name="captured_image">
+                                
+                                <!-- Buttons -->
+                                <div class="d-flex gap-2">
+                                    <button type="button" id="startCamera" class="btn btn-primary">
+                                        <i class="fas fa-camera me-2"></i>Start Camera
+                                    </button>
+                                    <button type="button" id="captureImage" class="btn btn-success d-none">
+                                        <i class="fas fa-camera me-2"></i>Capture
+                                    </button>
+                                    <button type="button" id="retakeImage" class="btn btn-warning d-none">
+                                        <i class="fas fa-redo me-2"></i>Retake
+                                    </button>
+                                </div>
+                                
+                                <!-- Preview of captured image -->
+                                <div id="imagePreview" class="d-none mt-2">
+                                    <p class="text-success"><i class="fas fa-check-circle"></i> Image captured</p>
+                                    <img id="previewImage" src="#" alt="Captured preview" class="img-thumbnail" style="max-height: 200px;">
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Please capture a clear image of the issue</small>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">STATE YOUR ISSUE</label>
+                            <textarea class="form-control issue-textarea" placeholder="Describe your issue in detail..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="reset" class="btn btn-outline-secondary">cancel</button>
+                            <button type="submit" class="btn btn-primary">submit</button>
+                        </div>
+                    </form>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

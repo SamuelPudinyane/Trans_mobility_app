@@ -21,4 +21,8 @@ urlpatterns = [
     path('route_and_node_preference/',views.route_and_node_preference,name='route_and_node_preference'),
     path('route_corridor/',views.route_corridor,name='route_corridor'),
     path('profile/',views.profile,name='profile'),
+    path('security_guard_report/',views.security_guard_report,name='security_guard_report'),
+    path('security_emergency_call/',views.security_emergency_call,name='security_emergency_call'),
+    path('security_supervisor/',views.security_supervisor,name='security_supervisor'),
+    path('security_supervisor_call/',views.security_supervisor_call,name='security_supervisor_call'),
 ]
