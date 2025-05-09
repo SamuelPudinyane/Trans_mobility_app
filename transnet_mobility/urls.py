@@ -20,4 +20,5 @@ urlpatterns = [
     path('load_strategic/',views.load_strategic,name='load_strategic'),
     path('route_and_node_preference/',views.route_and_node_preference,name='route_and_node_preference'),
     path('route_corridor/',views.route_corridor,name='route_corridor'),
+    path('profile/',views.profile,name='profile'),
 ]

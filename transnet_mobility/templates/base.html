@@ -365,7 +365,7 @@
                 <h3>Freight <span>Rail</span></h3>
             </div>
             <ul class="sidebar-menu">
-                {% if Account_type == 'Train Driver' or Account_type == 'Assistant Drivers'%}
+                {% if Account_type == 'Train Driver' or Account_type == 'Assistant Driver' %}
                 <li>
                     <a href="#route-optimization" data-bs-toggle="collapse">
                         <i class="fas fa-route"></i> Cargo, Locomotive and Wheelset Specifications
@@ -472,7 +472,7 @@
                                 <li><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                                 <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
                                 <li><a href="#"><i class="fas fa-database"></i> Data Request</a></li>
-                                <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
+                                <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a></li>
                                 <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                             </ul>
                         </div>
