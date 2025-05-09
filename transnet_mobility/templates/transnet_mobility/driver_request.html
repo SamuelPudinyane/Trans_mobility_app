@@ -64,7 +64,7 @@
            
             <!-- Sidebar -->
             <div class="col-md-3 sidebar p-3">
-                {% if Account_type == 'Operational Manager' %}
+                {% if Account_type == 'Administrator' %}
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'register_user' %}'">REGISTER NEW USERS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'edit_user' %}'">EDIT USER CREDENTIALS</button>
                 <button class="btn btn-light w-100 mb-2" onclick="window.location.href='{% url 'locomotive_config' %}'">CONFIGURE LOCOMOTIVE SPECIFICATIONS</button>
