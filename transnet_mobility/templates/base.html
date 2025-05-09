@@ -33,6 +33,7 @@
             /* Dark gray */
             --transnet-light: #F5F5F5;
             /* Light gray */
+            
         }
 
         body {
@@ -353,6 +354,33 @@
           .welcome-section {
             background-image: url("{% static 'images/mmm.png' %}");
           }
+
+    
+/* apply red background to the table header */
+.table-red thead {
+  background-color: var(--transnet-red);
+}
+.table-red thead th {
+  color: #fff;
+}
+/* subtle red hover on rows */
+.table-red tbody tr:hover {
+  background-color: rgba(227, 25, 55, 0.1);
+}
+/* style the back button in the same red family */
+.btn-back {
+  background-color: var(--transnet-red);
+  color: #fff;
+  border: none;
+}
+.btn-back:hover {
+  background-color: #c21e30;
+  color: #fff;
+}
+
+
+
+
     </style>
 </head>
 
