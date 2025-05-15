@@ -28,8 +28,8 @@ def login(request):
                             return render(request,'cargo_specs.html',{'Account_type':"Assistant Driver"})
                         
                         elif user['account_type']=="Administrator":
-                            Account_type="Operational Managers"
-                            return redirect('trip_data')
+                    
+                            return render(request,'driver_assignment.html',{'Account_type':"Administrator"})
                         
                         elif user['account_type']=="Security":
                             return render(request, 'security_guard_report.html',{'Account_type':"Security"})
@@ -53,32 +53,28 @@ def register_user(request):
     return render(request, 'register_user.html')
 
 def locomotive_config(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'locomotive_config.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
-        return render(request, 'locomotive_config.html',{'Account_type':"Assistant Driver"})
+    # if user['account_type']=="Administrator":
+        return render(request, 'locomotive_config.html',{'Account_type':"Administrator"})
 
 def cargo_specs(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'cargo_specs.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
-        return render(request, 'cargo_specs.html',{'Account_type':"Assistant Driver"})
+    # if user['account_type']=="Administrator":
+        return render(request, 'locomotive_config.html',{'Account_type':"Administrator"})
 
 
 def wheelset(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'wheelset.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
-        return render(request, 'wheelset.html',{'Account_type':"Assistant Driver"})
+    # if user['account_type']=="Administrator":
+        return render(request, 'locomotive_config.html',{'Account_type':"Administrator"})
 
 def driver_assignment(request):
-    return render(request, 'driver_assignment.html')
+    # user=request.session['user']
+    # if user['account_type']=="Administrator":
+        return render(request, 'driver_assignment.html',{'Account_type':"Administrator"})
 
 
 def all_users(request):
@@ -92,66 +88,70 @@ def notifications(request):
 
 def trip_data(request):
     
-    user=request.session['user']
+    # user=request.session['user']
    
-    if user['account_type']=="Train Driver":
-        return render(request, 'trip_data.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
+    # if user['account_type']=="Train Driver":
+        # return render(request, 'trip_data.html',{'Account_type':"Train Driver"})
+    # elif user['account_type']=="Assistant Driver":
         return render(request, 'trip_data.html',{'Account_type':"Assistant Driver"})
     
 
 def driver_request(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'driver_request.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
+    # if user['account_type']=="Train Driver":
+        # return render(request, 'driver_request.html',{'Account_type':"Train Driver"})
+    # elif user['account_type']=="Assistant Driver":
         return render(request, 'driver_request.html',{'Account_type':"Assistant Driver"})
 
 
 
 
 def map_location(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'map_location.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
-        return render(request, 'map_location.html',{'Account_type':"Assistant Driver"})
+    # if user['account_type']=="Train Driver":
+        # return render(request, 'map_location.html',{'Account_type':"Train Driver"})
+    # elif user['account_type']=="Assistant Driver":
+        # return render(request, 'map_location.html',{'Account_type':"Assistant Driver"})
+    # elif user['account_type']=="Administrator":
+        return render(request, 'map_location.html',{'Account_type':"Administrator"})
     
    
 
 def map_location_railway(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'map_location_railway.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
-        return render(request, 'map_location_railway.html',{'Account_type':"Assistant Driver"})
+    # if user['account_type']=="Train Driver":
+        # return render(request, 'map_location_railway.html',{'Account_type':"Train Driver"})
+    # elif user['account_type']=="Assistant Driver":
+        # return render(request, 'map_location_railway.html',{'Account_type':"Assistant Driver"})
+    # elif user['account_type']=="Administrator":
+        return render(request, 'map_location_railway.html',{'Account_type':"Administrator"})
 
 
 def fuel_matrics(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'fuel_matrics.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
+    # if user['account_type']=="Train Driver":
+        # return render(request, 'fuel_matrics.html',{'Account_type':"Train Driver"})
+    # elif user['account_type']=="Assistant Driver":
         return render(request, 'fuel_matrics.html',{'Account_type':"Assistant Driver"})
 
 def route_and_node_preference(request):
-    user=request.session['user']
+    # user=request.session['user']
     
-    if user['account_type']=="Train Driver":
-        return render(request, 'route_and_node_preference.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
+    # if user['account_type']=="Train Driver":
+        # return render(request, 'route_and_node_preference.html',{'Account_type':"Train Driver"})
+    # elif user['account_type']=="Assistant Driver":
         return render(request, 'route_and_node_preference.html',{'Account_type':"Assistant Driver"})
 
 def load_strategic(request):
-    user=request.session['user']
+    # user=request.session['user']
 
-    if user['account_type']=="Train Driver":
-        return render(request, 'load_strategic.html',{'Account_type':"Train Driver"})
-    elif user['account_type']=="Assistant Driver":
+    # if user['account_type']=="Train Driver":
+        # return render(request, 'load_strategic.html',{'Account_type':"Train Driver"})
+    # elif user['account_type']=="Assistant Driver":
         return render(request, 'load_strategic.html',{'Account_type':"Assistant Driver"})
 
 
@@ -160,37 +160,39 @@ def route_corridor(request):
 
 
 def profile(request):
-    profile=request.session['user']
+    # profile=request.session['user']
   
-    Account_type=profile['account_type']
+    # Account_type=profile['account_type']
 
     return render(request,'profile.html',{"profile":profile,"Account_type":Account_type})
 
 
 def security_guard_report(request):
-    user=request.session['user']
-    Account_type=user['account_type']
-    return render(request, 'security_guard_report.html',{'Account_type':Account_type})
+    # user=request.session['user']
+    # Account_type=user['account_type']
+    return render(request, 'security_guard_report.html',{'Account_type':"Security"})
 
 def security_emergency_call(request):
-    user=request.session['user']
-    Account_type=user['account_type']
-    return render(request, 'security_emergency_call.html',{'Account_type':Account_type})
+    # user=request.session['user']
+    # Account_type=user['account_type']
+    return render(request, 'security_emergency_call.html',{'Account_type':"Security"})
 
 def security_supervisor(request):
-    user=request.session['user']
-    Account_type=user['account_type']
-    return render(request, 'security_supervisor.html',{'Account_type':Account_type})
+    # user=request.session['user']
+    # Account_type=user['account_type']
+    return render(request, 'security_supervisor.html',{'Account_type':"Security Supervisor"})
 
 
 def security_supervisor_call(request):
-    user=request.session['user']
-    Account_type=user['account_type']
-    return render(request, 'security_supervisor_call.html',{'Account_type':Account_type})
+    # user=request.session['user']
+    # Account_type=user['account_type']
+    return render(request, 'security_supervisor_call.html',{'Account_type':"Security Supervisor"})
 
 
 
-
+def logout(request):
+    request.session.pop('user',None)
+    return render(request,'login.html')
 
 
 

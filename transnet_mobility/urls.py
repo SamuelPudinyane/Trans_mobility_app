@@ -25,4 +25,5 @@ urlpatterns = [
     path('security_emergency_call/',views.security_emergency_call,name='security_emergency_call'),
     path('security_supervisor/',views.security_supervisor,name='security_supervisor'),
     path('security_supervisor_call/',views.security_supervisor_call,name='security_supervisor_call'),
+    path('logout/',views.logout,name='logout'),
 ]
