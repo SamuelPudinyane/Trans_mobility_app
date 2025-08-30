@@ -13,6 +13,8 @@ from .models import UserLocation,CustomUser
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+
+@login_required
 def login_view(request):
     if request.method == 'POST':
         email = request.POST.get('username')  # if using email as username
@@ -24,7 +26,7 @@ def login_view(request):
         if user is not None:
             # Log the user in
             login(request, user)
-            request.session['user']=user
+            request.session['account_type']=user.role
             # Redirect based on role/account_type
             account_type = user.role  # or user.account_type
             if account_type == "DRIVER":
@@ -44,12 +46,18 @@ def login_view(request):
 
     return render(request, 'login.html')
 
+
+@login_required
 def password_reset(request):
     return render(request, 'password_reset.html')
 
+
+@login_required
 def home(request):
     return render(request, 'edit_user.html')
 
+
+@login_required
 def register_user(request):
     if request.method == "POST":
         # Capture all fields from the form
@@ -95,58 +103,80 @@ def register_user(request):
 
     return render(request, 'register_user.html')
 
-
+@login_required
 def locomotive_config(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
     
-    if user['account_type']=="ADMIN":
+    if account_type=="ADMIN":
         return render(request, 'locomotive_config.html',{'Account_type':"ADMIN"})
+    else:
+        return redirect('login')
 
+
+@login_required
 def cargo_specs(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
     
-    if user['account_type']=="ADMIN":
+    if account_type=="ADMIN":
         return render(request, 'cargo_specs.html',{'Account_type':"ADMIN"})
 
+    else:
+        return redirect('login')
 
+@login_required
 def wheelset(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
     
-    if user['account_type']=="ADMIN":
+    if account_type=="ADMIN":
         return render(request, 'wheelset.html',{'Account_type':"ADMIN"})
 
+    else:
+        return redirect('login')
+
+@login_required
 def driver_assignment(request):
-    user=request.session['user']
-    if user['account_type']=="ADMIN":
+    account_type=request.session.get('account_type')
+    if account_type=="ADMIN":
         return render(request, 'driver_assignment.html',{'Account_type':"ADMIN"})
 
+    else:
+        return redirect('login')
 
+
+@login_required
 def all_users(request):
     return render(request, 'all_users.html')
 
 
-
+@login_required
 def notifications(request):
     return render(request, 'notifications.html')
 
-
+@login_required
 def trip_data(request):
     
-    user=request.session['user']
+    account_type=request.session.get('account_type')
    
-    if user['account_type']=="DRIVER":
+    if account_type=="DRIVER":
         return render(request, 'trip_data.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="DRIVER":
+    elif account_type=="DRIVER":
         return render(request, 'trip_data.html',{'Account_type':"DRIVER"})
+    else:
+        return redirect('login')
     
 
+@login_required
 def driver_request(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
     
-    if user['account_type']=="DRIVER":
+    if account_type=="DRIVER":
         return render(request, 'driver_request.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="DRIVER":
+    elif account_type=="DRIVER":
         return render(request, 'driver_request.html',{'Account_type':"DRIVER"})
+
+
+    else:
+        return redirect('login')
 
 
 @csrf_exempt
@@ -189,92 +219,116 @@ def update_location(request):
     return JsonResponse({"error": "Invalid request"}, status=400)
 
 
-
+@login_required
 def map_location(request):
-    user=request.session['user']
     
-    if user['account_type']=="DRIVER":
-        return render(request, 'map_location.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="DRIVER":
-        return render(request, 'map_location.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="ADMIN":
-        return render(request, 'map_location.html',{'Account_type':"ADMIN"})
+        account_type=request.session.get('account_type')
+        if account_type=="DRIVER":
+            return render(request, 'map_location.html',{'Account_type':"DRIVER"})
+        elif account_type=="DRIVER":
+            return render(request, 'map_location.html',{'Account_type':"DRIVER"})
+        elif account_type=="ADMIN":
+            return render(request, 'map_location.html',{'Account_type':"ADMIN"})
     
-   
+        else:
+            return redirect('login')
+    
 
+@login_required
 def map_location_railway(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
     
-    if user['account_type']=="DRIVER":
+    if account_type=="DRIVER":
         return render(request, 'map_location_railway.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="DRIVER":
+    elif account_type=="DRIVER":
         return render(request, 'map_location_railway.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="ADMIN":
+    elif account_type=="ADMIN":
         return render(request, 'map_location_railway.html',{'Account_type':"ADMIN"})
 
+    else:
+        return redirect('login')
 
+
+@login_required
 def fuel_matrics(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
     
-    if user['account_type']=="DRIVER":
+    if account_type=="DRIVER":
         return render(request, 'fuel_matrics.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="DRIVER":
+    elif account_type=="DRIVER":
         return render(request, 'fuel_matrics.html',{'Account_type':"DRIVER"})
 
+    else:
+        return redirect('login')
+
+
+@login_required
 def route_and_node_preference(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
     
-    if user['account_type']=="DRIVER":
+    if account_type=="DRIVER":
         return render(request, 'route_and_node_preference.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="DRIVER":
+    elif account_type=="DRIVER":
         return render(request, 'route_and_node_preference.html',{'Account_type':"DRIVER"})
 
+    else:
+        return redirect('login')
+
+@login_required
 def load_strategic(request):
-    user=request.session['user']
+    account_type=request.session.get('account_type')
 
-    if user['account_type']=="DRIVER":
+    if account_type=="DRIVER":
         return render(request, 'load_strategic.html',{'Account_type':"DRIVER"})
-    elif user['account_type']=="DRIVER":
+    elif account_type=="DRIVER":
         return render(request, 'load_strategic.html',{'Account_type':"DRIVER"})
 
+    else:
+        return redirect('login')
 
+
+@login_required
 def route_corridor(request):
     return render(request, 'route_corridor.html')
 
-
+@login_required
 def profile(request):
-    profile=request.session['user']
+    profile=request.session.get('account_type')
   
-    Account_type=profile['account_type']
+    Account_type=profile
 
     return render(request,'profile.html',{"profile":profile,"Account_type":Account_type})
 
-
+@login_required
 def security_guard_report(request):
-    user=request.session['user']
-    Account_type=user['account_type']
+    account_type=request.session.get('account_type')
+    
     return render(request, 'security_guard_report.html',{'Account_type':"Security"})
 
+@login_required
 def security_emergency_call(request):
-    user=request.session['user']
-    Account_type=user['account_type']
+    account_type=request.session.get('account_type')
+   
     return render(request, 'security_emergency_call.html',{'Account_type':"Security"})
 
+
+@login_required
 def security_supervisor(request):
-    user=request.session['user']
-    Account_type=user['account_type']
+    account_type=request.session.get('account_type')
+  
     return render(request, 'security_supervisor.html',{'Account_type':"Security Supervisor"})
 
 
+@login_required
 def security_supervisor_call(request):
-    user=request.session['user']
-    Account_type=user['account_type']
+    account_type=request.session.get('account_type')
+
     return render(request, 'security_supervisor_call.html',{'Account_type':"Security Supervisor"})
 
 
 
 def logout(request):
-    request.session.pop('user',None)
+    request.session.pop('account_type',None)
     return render(request,'login.html')
 
 
