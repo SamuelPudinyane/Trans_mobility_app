@@ -2,6 +2,13 @@
 
 {% block title %}Cargo Specifications{% endblock %}
 {% block content %}
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .builder, .survey { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+    .question { margin: 10px 0; }
+    label { display: block; margin-bottom: 5px; }
+    input, select, button, textarea { margin: 5px 0; }
+  </style>
             <!-- Main Content -->
             <div class="p-4">
                 
@@ -65,7 +72,101 @@
             </div>
         </div>
     </div>
+    <!-- Question Builder -->
+  <div class="builder p-4 m-4">
+    <h2>Add Section</h2>
+    <label>Question Text:
+      <input class="form-control" type="text" id="questionText">
+    </label>
+    <label>Question Type:
+      <select class="form-select" id="questionType">
+        <option value="text">Short Text</option>
+        <option value="textarea">Long Text</option>
+        <option value="radio">Multiple Choice (Single)</option>
+        <option value="checkbox">Multiple Choice (Multiple)</option>
+        <option value="dropdown">Dropdown</option>
+      </select>
+    </label>
+    <label>Options (comma separated, for radio/checkbox/dropdown):
+      <input class="form-control" type="text" id="options">
+    </label>
+    <button class="btn btn-outline-dark" onclick="addQuestion()">Add Question</button>
+  </div>
 
+  <!-- Survey Display -->
+  <div class="survey p-4 m-4">
+    <h2>Survey</h2>
+    <form id="surveyForm"></form>
+    <button type="submit" class="btn btn-outline-dark" form="surveyForm">Submit</button>
+  </div>
+
+   <script>
+    let surveyForm = document.getElementById("surveyForm");
+
+    function addQuestion() {
+      const text = document.getElementById("questionText").value.trim();
+      const type = document.getElementById("questionType").value;
+      const options = document.getElementById("options").value.split(",").map(o => o.trim()).filter(o => o);
+
+      if (!text) {
+        alert("Please enter a question text");
+        return;
+      }
+
+      let wrapper = document.createElement("div");
+      wrapper.classList.add("question");
+
+      let label = document.createElement("label");
+      label.textContent = text;
+      wrapper.appendChild(label);
+
+      // Different input types
+      if (type === "text") {
+        wrapper.appendChild(document.createElement("input"));
+      } 
+      else if (type === "textarea") {
+        wrapper.appendChild(document.createElement("textarea"));
+      } 
+      else if (type === "radio") {
+        options.forEach(opt => {
+          let radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = text; // group by question
+          radio.value = opt;
+          wrapper.appendChild(radio);
+          wrapper.appendChild(document.createTextNode(opt));
+          wrapper.appendChild(document.createElement("br"));
+        });
+      } 
+      else if (type === "checkbox") {
+        options.forEach(opt => {
+          let checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.name = text;
+          checkbox.value = opt;
+          wrapper.appendChild(checkbox);
+          wrapper.appendChild(document.createTextNode(opt));
+          wrapper.appendChild(document.createElement("br"));
+        });
+      } 
+      else if (type === "dropdown") {
+        let select = document.createElement("select");
+        options.forEach(opt => {
+          let option = document.createElement("option");
+          option.value = opt;
+          option.textContent = opt;
+          select.appendChild(option);
+        });
+        wrapper.appendChild(select);
+      }
+
+      surveyForm.appendChild(wrapper);
+
+      // Reset builder form
+      document.getElementById("questionText").value = "";
+      document.getElementById("options").value = "";
+    }
+  </script>
     <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% endblock %}

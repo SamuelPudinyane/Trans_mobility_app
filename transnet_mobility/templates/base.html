@@ -38,7 +38,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--transnet-light);
-            background-image: url('./images/back.png');
+            background-image: url({% static './images/back.png' %});
         }
 
         /* Sidebar styling */
@@ -150,7 +150,7 @@
             padding: 24px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
-            background-image: url('./images/mmm.png');
+            background-image: url({% static '/images/mmm.png'%});
             font-family: Georgia, 'Times New Roman', Times, serif;
             margin-top: -20px;
             background-size: cover;
@@ -350,6 +350,12 @@
           .welcome-section {
             background-image: url("{% static 'images/mmm.png' %}");
           }
+          #map {
+            height:100vh;
+            width:100%;
+            z-index:1;
+          }
+         
     </style>
 </head>
 
@@ -362,7 +368,7 @@
                 <h3>Freight <span>Rail</span></h3>
             </div>
             <ul class="sidebar-menu">
-                {% if Account_type == 'Train Driver' or Account_type == 'Assistant Driver' %}
+                {% if Account_type == 'DRIVER' or Account_type == 'DRIVER' %}
                 
                 <li>
                     <a href="#fuel-emissions" data-bs-toggle="collapse">
@@ -395,7 +401,7 @@
                         <li><a href="{% url 'map_location_railway' %}"><i class="fas fa-chevron-right"></i> Railway Map</a></li>
                     </ul>
                 </li>
-                {% elif Account_type == 'Administrator'%}
+                {% elif Account_type == 'ADMIN'%}
                 <li>
                     <a href="#route-optimization" data-bs-toggle="collapse">
                         <i class="fas fa-route"></i> Cargo, Locomotive and Wheelset Specifications
@@ -404,7 +410,7 @@
                     <ul id="route-optimization" class="sidebar-dropdown collapse">
                         <li><a href="{% url 'driver_assignment' %}"><i class="fas fa-chevron-right"></i> Assign Driver To Locomotive</a></li>
                         <li><a href="{% url 'cargo_specs' %}"><i class="fas fa-chevron-right"></i> cargo Configuration</a></li>
-                        
+                        <li><a href="{% url 'locomotive_config' %}"><i class="fas fa-chevron-right"></i> Locomotive Configuration</a></li>
                         <li><a href="{% url 'wheelset' %}"><i class="fas fa-chevron-right"></i> Wheelset Configuration</a></li>
                         
                         
@@ -510,6 +516,19 @@
                         assistance.
                     </p>
                 </div>
+  <!-- Flash Messages -->
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert 
+        {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} 
+        alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
                 <!-- Dashboard Cards -->
                 <div class="row">

@@ -7,34 +7,29 @@
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([-30.5595, 22.9375], 6);
+  // Initialize the map
+  const map = L.map('map').setView([-30.5595, 22.9375], 6);
 
-    // 🚄 Railway tile layer from OpenRailwayMap
-    L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a> contributors',
-    }).addTo(map);
+  // OpenRailwayMap tiles only
+  L.tileLayer('https://a.tile.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: 'Railways: <a href="http://www.openrailwaymap.org/">OpenRailwayMap</a>'
+  }).addTo(map);
 
-    function showDeviceLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-
-            const marker = L.marker([lat, lng]).addTo(map);
-            marker.bindPopup(`<div class="custom-popup">📍 You are here</div>`).openPopup();
-            map.setView([lat, lng], 13);
-          },
-          () => {
-            alert("Could not retrieve your location.");
-          }
-        );
-      } else {
-        alert("Geolocation is not supported by this browser.");
-      }
-    }
-
-    showDeviceLocation();
-  </script>
+  // Show device location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const marker = L.marker([lat, lng]).addTo(map);
+        marker.bindPopup('📍 You are here').openPopup();
+        map.setView([lat, lng], 13);
+      },
+      () => alert("Could not retrieve your location.")
+    );
+  } else {
+    alert("Geolocation is not supported by this browser.");
+  }
+</script>
   {% endblock %}
