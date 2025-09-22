@@ -14,7 +14,6 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
-@login_required
 def login_view(request):
     if request.method == 'POST':
         email = request.POST.get('username')  # if using email as username
