@@ -27,4 +27,9 @@ urlpatterns = [
     path('security_supervisor_call/',views.security_supervisor_call,name='security_supervisor_call'),
     path('logout/',views.logout,name='logout'),
     path("api/update-location/", views.update_location, name="update_location"),
+    path('api/locomotive-spec/', views.api_get_locomotive_spec, name='api_get_locomotive_spec'),
+    path('api/cargo-spec/', views.api_get_cargo_spec, name='api_get_cargo_spec'),
+    path('api/wheelset-spec/', views.api_get_wheelset_spec, name='api_get_wheelset_spec'),
+    path('api/route-preference-spec/', views.api_get_route_preference_spec, name='api_get_route_preference_spec'),
+    path('api/fuel-spec/', views.api_get_fuel_spec, name='api_get_fuel_spec'),
 ]

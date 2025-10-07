@@ -20,32 +20,54 @@
                                 <h5 class="card-title">Fuel Matrics</h5>
                             </div>
                             <div class="card-body">
-                                
-                                <div class="spec-item">
-                                    <label class="form-label ">Daily Fuel Consumption</label>
-                                    <input type="text" class="form-control" placeholder="daily fuel consumption in L">
-                                </div>
+                                <form id="fuelForm" method="post" action="">
+                                  {% csrf_token %}
+                                  <input type="hidden" name="selected_spec_id" value="" />
+
+                                  <div class="mb-3">
+                                    <label class="form-label">Select Saved Fuel Entry</label>
+                                    <div class="input-group">
+                                      <select class="form-select" name="fuel_select">
+                                        <option value="" disabled selected>Select saved entry...</option>
+                                        {% if fuels %}
+                                          {% for f in fuels %}
+                                            <option value="{{ f.id }}">{{ f.fuel_type }} — {{ f.daily_fuel_consumption }}</option>
+                                          {% endfor %}
+                                          <option disabled>──────────</option>
+                                        {% endif %}
+                                      </select>
+                                      <button id="selectFuelBtn" class="btn btn-primary" type="button">Select</button>
+                                    </div>
+                                  </div>
+
+                                  <div class="spec-item">
+                                      <label class="form-label ">Daily Fuel Consumption</label>
+                                      <input type="text" name="daily_fuel_consumption" class="form-control" placeholder="daily fuel consumption in L">
+                                  </div>
                                 
                                 
                                 <div class="spec-item">
                                     <label class="form-label">Fuel Cost Per Litre</label>
-                                    <input type="text" class="form-control" placeholder="Fuel Cost Per Litre (R)">
+                  <input type="text" name="fuel_cost_per_litre" class="form-control" placeholder="Fuel Cost Per Litre (R)">
                                 </div>
                                 
                                 <div class="spec-item">
                                     <label class="form-label">Average Load Per Trip</label>
-                                    <input type="text" class="form-control" placeholder="Average Load Per Trip (tons)">
+                  <input type="text" name="average_load_per_trip" class="form-control" placeholder="Average Load Per Trip (tons)">
                                 </div>
                                 <div class="spec-item d-flex flex-column mb-3">
                                     <label class="form-label">Fuel Type</label>
-                                    <select class="form-select">
-                                      <option selected disabled>select option</option>
-                                      <option>Diesel</option>
-                                                      <option>Petrol</option>
-                                                      <option>Bio-fuel</option>
-                                                      <option>Electrical</option>
+                                    <select name="fuel_type" class="form-select">
+                                      <option value="" selected disabled>select option</option>
+                                      <option value="Diesel">Diesel</option>
+                                      <option value="Petrol">Petrol</option>
+                                      <option value="Bio-fuel">Bio-fuel</option>
+                                      <option value="Electrical">Electrical</option>
                                     </select>
                                   </div>
+
+                                  <!-- Dynamic survey fields will be injected here -->
+                                  <div id="dynamicSurveyFields" class="mt-3"></div>
                                 
                                 
                             </div>
@@ -55,20 +77,62 @@
                     
                 </div>
 
-                <div class="d-flex justify-content-end mt-4 gap-2">
-                    <button type="button" class="btn btn-outline-secondary">Cancel</button>
-                    <button type="button" class="btn btn-primary">Submit</button>
+        <div class="d-flex justify-content-end mt-4 gap-2">
+          <button type="reset" class="btn btn-outline-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+  </form>
+  <!-- Saved fuels table -->
+        <div class="row mt-4">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-header"><h5 class="card-title">Saved Fuel Entries</h5></div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Fuel Type</th>
+                        <th>Daily Consumption (L)</th>
+                        <th>Cost Per L</th>
+                        <th>Avg Load / Trip</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for f in fuels %}
+                      <tr>
+                        <td>{{ f.id }}</td>
+                        <td>{{ f.fuel_type|default:'' }}</td>
+                        <td>{{ f.daily_fuel_consumption|default:'' }}</td>
+                        <td>{{ f.fuel_cost_per_litre|default:'' }}</td>
+                        <td>{{ f.average_load_per_trip|default:'' }}</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-primary edit-fuel-btn" data-id="{{ f.id }}">Edit</button></td>
+                      </tr>
+                      {% empty %}
+                      <tr><td colspan="6">No saved fuel entries</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
             </div>
         </div>
     </div>
-        <!-- Question Builder -->
-  <div class="builder p-4 m-4">
-    <h2>Add Section</h2>
-    <label>Question Text:
+
+  <!-- Question Builder (moved inside the page and tied to the fuel form) -->
+  <div class="builder p-3 mt-4">
+    <h5>Add Section</h5>
+    <div class="mb-2">
+      <label class="form-label">Question Text</label>
       <input class="form-control" type="text" id="questionText">
-    </label>
-    <label>Question Type:
+    </div>
+    <div class="mb-2">
+      <label class="form-label">Question Type</label>
       <select class="form-select" id="questionType">
         <option value="text">Short Text</option>
         <option value="textarea">Long Text</option>
@@ -76,86 +140,149 @@
         <option value="checkbox">Multiple Choice (Multiple)</option>
         <option value="dropdown">Dropdown</option>
       </select>
-    </label>
-    <label>Options (comma separated, for radio/checkbox/dropdown):
+    </div>
+    <div class="mb-2">
+      <label class="form-label">Options (comma separated, for radio/checkbox/dropdown)</label>
       <input class="form-control" type="text" id="options">
-    </label>
-    <button class="btn btn-outline-dark" onclick="addQuestion()">Add Question</button>
+    </div>
+    <div>
+      <button class="btn btn-outline-dark" id="addQuestionBtn" type="button">Add Question</button>
+    </div>
   </div>
 
-  <!-- Survey Display -->
-  <div class="survey p-4 m-4">
-    <h2>Survey</h2>
-    <form id="surveyForm"></form>
-    <button type="submit" class="btn btn-outline-dark" form="surveyForm">Submit</button>
-  </div>
- <script>
-    let surveyForm = document.getElementById("surveyForm");
-
+  <script>
+    // When a question is added, append a hidden survey_questions[] input and visible answer inputs
     function addQuestion() {
-      const text = document.getElementById("questionText").value.trim();
-      const type = document.getElementById("questionType").value;
-      const options = document.getElementById("options").value.split(",").map(o => o.trim()).filter(o => o);
+      const textEl = document.getElementById("questionText");
+      const typeEl = document.getElementById("questionType");
+      const optionsEl = document.getElementById("options");
+      const text = textEl.value.trim();
+      const type = typeEl.value;
+      const options = optionsEl.value.split(',').map(o => o.trim()).filter(Boolean);
 
-      if (!text) {
-        alert("Please enter a question text");
-        return;
+      if (!text) { alert('Please enter a question'); return; }
+
+      const form = document.getElementById('fuelForm');
+      const dynamic = document.getElementById('dynamicSurveyFields');
+
+      // determine index for this question
+      const idx = document.querySelectorAll('input[name="survey_questions[]"]').length;
+
+      // create metadata hidden input
+      const meta = { text: text, type: type, options: options };
+      const hid = document.createElement('input');
+      hid.type = 'hidden';
+      hid.name = 'survey_questions[]';
+      hid.value = JSON.stringify(meta);
+      form.appendChild(hid);
+
+      // create a visible wrapper for answers
+      const wrap = document.createElement('div');
+      wrap.className = 'mb-2';
+      const lbl = document.createElement('label');
+      lbl.className = 'form-label';
+      lbl.textContent = text;
+      wrap.appendChild(lbl);
+
+      // create answer inputs depending on type
+      if (type === 'text') {
+        const a = document.createElement('input');
+        a.type = 'text';
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        wrap.appendChild(a);
+      } else if (type === 'textarea') {
+        const a = document.createElement('textarea');
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        wrap.appendChild(a);
+      } else if (type === 'radio') {
+        options.forEach(opt => {
+          const div = document.createElement('div');
+          div.className = 'form-check';
+          const i = document.createElement('input');
+          i.type = 'radio';
+          i.name = `survey_answers[${idx}]`;
+          i.value = opt;
+          i.className = 'form-check-input';
+          const l = document.createElement('label');
+          l.className = 'form-check-label';
+          l.appendChild(document.createTextNode(opt));
+          div.appendChild(i);
+          div.appendChild(l);
+          wrap.appendChild(div);
+        });
+      } else if (type === 'checkbox') {
+        options.forEach(opt => {
+          const div = document.createElement('div');
+          div.className = 'form-check';
+          const i = document.createElement('input');
+          i.type = 'checkbox';
+          i.name = `survey_answers[${idx}][]`;
+          i.value = opt;
+          i.className = 'form-check-input';
+          const l = document.createElement('label');
+          l.className = 'form-check-label';
+          l.appendChild(document.createTextNode(opt));
+          div.appendChild(i);
+          div.appendChild(l);
+          wrap.appendChild(div);
+        });
+      } else if (type === 'dropdown') {
+        const s = document.createElement('select');
+        s.name = `survey_answers[${idx}]`;
+        s.className = 'form-select';
+        const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Select...'; s.appendChild(empty);
+        options.forEach(opt => {
+          const o = document.createElement('option'); o.value = opt; o.textContent = opt; s.appendChild(o);
+        });
+        wrap.appendChild(s);
       }
 
-      let wrapper = document.createElement("div");
-      wrapper.classList.add("question");
+      dynamic.appendChild(wrap);
 
-      let label = document.createElement("label");
-      label.textContent = text;
-      wrapper.appendChild(label);
-
-      // Different input types
-      if (type === "text") {
-        wrapper.appendChild(document.createElement("input"));
-      } 
-      else if (type === "textarea") {
-        wrapper.appendChild(document.createElement("textarea"));
-      } 
-      else if (type === "radio") {
-        options.forEach(opt => {
-          let radio = document.createElement("input");
-          radio.type = "radio";
-          radio.name = text; // group by question
-          radio.value = opt;
-          wrapper.appendChild(radio);
-          wrapper.appendChild(document.createTextNode(opt));
-          wrapper.appendChild(document.createElement("br"));
-        });
-      } 
-      else if (type === "checkbox") {
-        options.forEach(opt => {
-          let checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.name = text;
-          checkbox.value = opt;
-          wrapper.appendChild(checkbox);
-          wrapper.appendChild(document.createTextNode(opt));
-          wrapper.appendChild(document.createElement("br"));
-        });
-      } 
-      else if (type === "dropdown") {
-        let select = document.createElement("select");
-        options.forEach(opt => {
-          let option = document.createElement("option");
-          option.value = opt;
-          option.textContent = opt;
-          select.appendChild(option);
-        });
-        wrapper.appendChild(select);
-      }
-
-      surveyForm.appendChild(wrapper);
-
-      // Reset builder form
-      document.getElementById("questionText").value = "";
-      document.getElementById("options").value = "";
+      // reset builder fields
+      textEl.value = '';
+      optionsEl.value = '';
+      typeEl.selectedIndex = 0;
     }
+
+    document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
   </script>
+    <script>
+      (function(){
+        const sel = document.querySelector('select[name="fuel_select"]');
+        const btn = document.getElementById('selectFuelBtn');
+        const endpoint = "{% url 'api_get_fuel_spec' %}";
+        function fetchFuelById(id){
+          if (!id) return;
+          fetch(endpoint + '?id=' + encodeURIComponent(id))
+            .then(r => { if (r.status === 204) return null; return r.json(); })
+            .then(data => {
+              if (!data) return;
+              const set = (n,v) => { const el = document.querySelector('[name="'+n+'"]'); if (el) el.value = v || ''; };
+              const selIdEl = document.querySelector('[name="selected_spec_id"]'); if (selIdEl) selIdEl.value = data.id || '';
+              set('daily_fuel_consumption', data.daily_fuel_consumption);
+              set('fuel_cost_per_litre', data.fuel_cost_per_litre);
+              set('average_load_per_trip', data.average_load_per_trip);
+              set('fuel_type', data.fuel_type);
+            }).catch(err => console.warn('fuel fetch', err));
+        }
+        if (sel) sel.addEventListener('change', () => fetchFuelById(sel.value));
+        if (btn) btn.addEventListener('click', () => fetchFuelById(sel.value));
+
+        document.querySelectorAll('.edit-fuel-btn').forEach(b => {
+          b.addEventListener('click', (e) => {
+            const id = e.currentTarget.getAttribute('data-id');
+            if (!id) return;
+            fetchFuelById(id);
+            if (sel) sel.value = id;
+            const form = document.getElementById('fuelForm');
+            if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        });
+      })();
+    </script>
     <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% endblock %}

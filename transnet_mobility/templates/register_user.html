@@ -47,8 +47,11 @@
  {% if messages %}
   <div class="container mt-3">
     {% for message in messages %}
+      {% comment %} Map Django message tags to Bootstrap alert classes. 'error' -> 'danger' {% endcomment %}
       <div class="alert 
-        {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} 
+        {% if message.tags %}
+          {% if 'error' in message.tags %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}
+        {% else %}alert-info{% endif %} 
         alert-dismissible fade show" role="alert">
         {{ message }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -58,50 +61,51 @@
 {% endif %}
       <!-- Form Section -->
       <div class="form-box">
-        <form>
+        <form method="post" action="" novalidate>
+          {% csrf_token %}
           <div class="row g-3">
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">FIRST NAME</label>
-              <input type="text" class="form-control" placeholder="first and second name">
+              <input type="text" name="first_name" class="form-control" placeholder="first and second name" value="{{ request.POST.first_name|default:'' }}">
             </div>
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">SURNAME</label>
-              <input type="text" class="form-control" placeholder="surname">
+              <input type="text" name="last_name" class="form-control" placeholder="surname" value="{{ request.POST.last_name|default:'' }}">
             </div>
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">ID NUMBER</label>
-              <input type="text" class="form-control" placeholder="identity number">
+              <input type="text" name="id_number" class="form-control" placeholder="identity number" value="{{ request.POST.id_number|default:'' }}">
             </div>
 
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">EMPLOYEE NUMBER</label>
-              <input type="text" class="form-control" placeholder="employee number">
+              <input type="text" name="employee_number" class="form-control" placeholder="employee number" value="{{ request.POST.employee_number|default:'' }}">
             </div>
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">MOBILE NUMBER</label>
-              <input type="text" class="form-control" placeholder="phone number">
+              <input type="text" name="mobile_number" class="form-control" placeholder="phone number" value="{{ request.POST.mobile_number|default:'' }}">
             </div>
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">EMAIL</label>
-              <input type="email" class="form-control" placeholder="email">
+              <input type="email" name="email" class="form-control" placeholder="email" value="{{ request.POST.email|default:'' }}">
             </div>
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">PASSWORD</label>
-              <input type="password" class="form-control" placeholder="password">
+              <input type="password" name="password" class="form-control" placeholder="password">
             </div>
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">CONFIRM PASSWORD</label>
-              <input type="password" class="form-control" placeholder="confirm password">
+              <input type="password" name="password2" class="form-control" placeholder="confirm password">
             </div>
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">ACCOUNT TYPE</label>
-              <select class="form-select">
+              <select name="account_type" class="form-select">
                 <option selected disabled>select option</option>
-                                <option>Driver</option>
-                                <option>Electrical Maintenance Team</option>
-                                <option>Mechanical Maintenance Team</option>
-                                <option>Emergency Response Team</option>
-                                <option>Locomotive Specialists</option>
+                <option value="Driver" {% if request.POST.account_type == 'Driver' %}selected{% endif %}>Driver</option>
+                <option value="Electrical Maintenance Team" {% if request.POST.account_type == 'Electrical Maintenance Team' %}selected{% endif %}>Electrical Maintenance Team</option>
+                <option value="Mechanical Maintenance Team" {% if request.POST.account_type == 'Mechanical Maintenance Team' %}selected{% endif %}>Mechanical Maintenance Team</option>
+                <option value="Emergency Response Team" {% if request.POST.account_type == 'Emergency Response Team' %}selected{% endif %}>Emergency Response Team</option>
+                <option value="Locomotive Specialists" {% if request.POST.account_type == 'Locomotive Specialists' %}selected{% endif %}>Locomotive Specialists</option>
               </select>
             </div>
 

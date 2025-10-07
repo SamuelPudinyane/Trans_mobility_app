@@ -4,7 +4,13 @@
 {% block content %}
 <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    .builder, .survey { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+    /* Keep the builder visually consistent with the main card/form
+       Remove large external margins and let it use the same horizontal
+       spacing as the rest of the page. */
+   /* Rely on the Bootstrap grid for width and alignment so the builder lines
+     up with the main card. Use a white background and card-like styling. */
+   .builder, .survey { margin: 20px 0 0 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background: #ffffff; }
+   .builder { /* small visual lift and matching width; width is controlled by bootstrap columns */ }
     .question { margin: 10px 0; }
     label { display: block; margin-bottom: 5px; }
     input, select, button, textarea { margin: 5px 0; }
@@ -35,34 +41,61 @@
                 <div class="row align-items-center">
                   <div class="col-md-6">
                     <div class="input-group">
-                      <select class="form-select" name="locomotive" required>
-                        <option value="" selected disabled>
-                          Select locomotive...
-                        </option>
-                        <option value="GE_ES44AC">
-                          GE ES44AC (Eagle Series)
-                        </option>
-                        <option value="EMD_SD70ACe">
-                          EMD SD70ACe (Evolution Series)
-                        </option>
-                        <option value="Siemens_Charger">
-                          Siemens Charger SC-44
-                        </option>
-                        <option value="ALCO_Century">ALCO Century 424</option>
-                        <option value="GE_AC6000CW">GE AC6000CW</option>
-                        <option value="EMD_GP40">EMD GP40-2</option>
-                        <option value="Bombardier_TRAXX">
-                          Bombardier TRAXX F140
-                        </option>
-                        <option value="GE_Dash9">GE Dash 9-44CW</option>
-                        <option value="EMD_F59PH">EMD F59PH</option>
-                        <option value="Siemens_Vectron">
-                          Siemens Vectron MS
-                        </option>
+                      <select class="form-select" name="locomotive_select" required>
+                        <option value="" selected disabled>Select locomotive...</option>
+                        {% if locomotives %}
+                          {% for l in locomotives %}
+                            <option value="{{ l.id }}">{{ l.name }}</option>
+                          {% endfor %}
+                          <option disabled></option>
+                        {% endif %}
+
+                        </select>
+                        <button id="selectLocoBtn" class="btn btn-primary" type="button">
+                          Select
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <script>
+                  // when select changes or the Select button is clicked, fetch spec and populate form
+                  (function(){
+                    const sel = document.querySelector('select[name="locomotive_select"]');
+                    const btn = document.getElementById('selectLocoBtn');
+                    if (!sel) return;
+
+                    const endpoint = "{% url 'api_get_locomotive_spec' %}";
+
+                    function fetchSpecById(id){
+                        if (!id) return;
+                        fetch(endpoint + '?id=' + encodeURIComponent(id))
+                        .then(r => { if (r.status === 204) return null; return r.json(); })
+                        .then(data => {
+                          if (!data) return;
+                          const set = (n,v) => { const el = document.querySelector("[name='"+n+"']"); if (el) el.value = v || ''; };
+                          // set the hidden selected_spec_id so the form submits the id
+                          const selIdEl = document.querySelector('[name="selected_spec_id"]');
+                          if (selIdEl) selIdEl.value = data.id || '';
+                          set('locomotive', data.locomotive);
+                          set('loc_type', data.loc_type);
+                          set('loc_class', data.loc_class);
+                          set('engine_supply', data.engine_supply);
+                          set('length', data.length);
+                          set('capacity_in_tons', data.capacity_in_tons);
+                          set('distributed_power', data.distributed_power);
+                          set('tractive_effort', data.tractive_effort);
+                          set('truck_circuit_spec', data.truck_circuit_spec);
+                        }).catch(err => console.warn('spec fetch', err));
+                    }
+                    sel.addEventListener('change', () => fetchSpecById(sel.value));
+                    if (btn) btn.addEventListener('click', () => fetchSpecById(sel.value));
+                  })();
+                </script>
+                        
                       </select>
-                      <button class="btn btn-primary" type="button">
-                        Select
-                      </button>
+                      
                     </div>
                   </div>
                 </div>
@@ -70,11 +103,24 @@
 
               <!-- Form Section -->
               <div class="form-box">
-                <form>
+                <form id="locomotiveForm" method="post" action="">
+                  {% csrf_token %}
+                  <input type="hidden" name="selected_spec_id" value="" />
+                  
+                  <div class="form-group-row">
+                    <label>Locomotive Name</label>
+                    <input
+                      type="text"
+                      name="locomotive"
+                      class="form-control"
+                      placeholder="name"
+                    />
+                  </div>
                   <div class="form-group-row">
                     <label>Type</label>
                     <input
                       type="text"
+                      name="loc_type"
                       class="form-control"
                       placeholder="type"
                     />
@@ -83,6 +129,7 @@
                     <label>Class</label>
                     <input
                       type="text"
+                      name="loc_class"
                       class="form-control"
                       placeholder="class"
                     />
@@ -91,6 +138,7 @@
                     <label>Engine Supply</label>
                     <input
                       type="text"
+                      name="engine_supply"
                       class="form-control"
                       placeholder="engine supply"
                     />
@@ -99,6 +147,7 @@
                     <label>Length</label>
                     <input
                       type="text"
+                      name="length"
                       class="form-control"
                       placeholder="length"
                     />
@@ -107,6 +156,7 @@
                     <label>Capacity In Tons</label>
                     <input
                       type="text"
+                      name="capacity_in_tons"
                       class="form-control"
                       placeholder="capacity in tons"
                     />
@@ -115,6 +165,7 @@
                     <label>Distributed Power</label>
                     <input
                       type="text"
+                      name="distributed_power"
                       class="form-control"
                       placeholder="distributed power"
                     />
@@ -123,6 +174,7 @@
                     <label>Tractive Efford</label>
                     <input
                       type="text"
+                      name="tractive_effort"
                       class="form-control"
                       placeholder="tractive efford"
                     />
@@ -131,11 +183,14 @@
                     <label>Truck Circuit Spec</label>
                     <input
                       type="text"
+                      name="truck_circuit_spec"
                       class="form-control"
                       placeholder="track circuit spec"
                     />
                   </div>
-
+                  <div id="dynamicSurveyFields"></div>
+                  <!-- Survey preview (questions will be appended here) -->
+                  <div id="surveyPreviewInForm" class="mb-3"></div>
                   <!-- Buttons -->
                   <div class="d-flex justify-content-end gap-2 mt-4">
                     <button type="reset" class="btn btn-outline-dark">
@@ -144,42 +199,44 @@
                     <button type="submit" class="btn btn-dark">submit</button>
                   </div>
                 </form>
+
+              <!-- Question Builder moved inside the same card so it shares width -->
+              <div class="builder mt-4">
+                <h2 class="card-title">Add Section</h2>
+                <div class="mb-3">
+                  <label class="form-label">Question Text:</label>
+                  <input class="form-control" type="text" id="questionText">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Question Type:</label>
+                  <select class="form-select" id="questionType">
+                    <option value="text">Short Text</option>
+                    <option value="textarea">Long Text</option>
+                    <option value="radio">Multiple Choice (Single)</option>
+                    <option value="checkbox">Multiple Choice (Multiple)</option>
+                    <option value="dropdown">Dropdown</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Options (comma separated, for radio/checkbox/dropdown):</label>
+                  <input class="form-control" type="text" id="options">
+                </div>
+                <button class="btn btn-outline-dark" onclick="addQuestion()">Add Question</button>
               </div>
+
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- Question Builder -->
-  <div class="builder p-4 m-4">
-    <h2>Add Section</h2>
-    <label>Question Text:
-      <input class="form-control" type="text" id="questionText">
-    </label>
-    <label>Question Type:
-      <select class="form-select" id="questionType">
-        <option value="text">Short Text</option>
-        <option value="textarea">Long Text</option>
-        <option value="radio">Multiple Choice (Single)</option>
-        <option value="checkbox">Multiple Choice (Multiple)</option>
-        <option value="dropdown">Dropdown</option>
-      </select>
-    </label>
-    <label>Options (comma separated, for radio/checkbox/dropdown):
-      <input class="form-control" type="text" id="options">
-    </label>
-    <button class="btn btn-outline-dark" onclick="addQuestion()">Add Question</button>
-  </div>
 
   <!-- Survey Display -->
-  <div class="survey p-4 m-4">
-    <h2>Survey</h2>
-    <form id="surveyForm"></form>
-    <button type="submit" class="btn btn-outline-dark" form="surveyForm">Submit</button>
-  </div>
+  <!-- survey preview moved into the locomotive form above -->
 
  <script>
-    let surveyForm = document.getElementById("surveyForm");
+  let questionIndex = 0;
+  const surveyPreview = document.getElementById("surveyPreviewInForm");
+  const dynamicFields = document.getElementById("dynamicSurveyFields");
 
     function addQuestion() {
       const text = document.getElementById("questionText").value.trim();
@@ -191,54 +248,118 @@
         return;
       }
 
-      let wrapper = document.createElement("div");
-      wrapper.classList.add("question");
+      const idx = questionIndex++;
 
-      let label = document.createElement("label");
-      label.textContent = text;
-      wrapper.appendChild(label);
+      // Add compact preview in the Survey area (no form controls to avoid duplicates)
+      const previewWrapper = document.createElement("div");
+      previewWrapper.classList.add("question");
+      previewWrapper.id = `preview-${idx}`;
+      const previewLabel = document.createElement("strong");
+      previewLabel.textContent = text;
+      previewWrapper.appendChild(previewLabel);
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'badge bg-secondary ms-2';
+      const typeMap = {
+        text: 'Short Text',
+        textarea: 'Long Text',
+        radio: 'Multiple Choice (Single)',
+        checkbox: 'Multiple Choice (Multiple)',
+        dropdown: 'Dropdown'
+      };
+      typeBadge.textContent = typeMap[type] || type;
+      previewWrapper.appendChild(typeBadge);
+      // remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+      removeBtn.textContent = 'Remove';
+      removeBtn.addEventListener('click', () => {
+        const metaEl = document.getElementById(`meta-${idx}`);
+        const answerEl = document.getElementById(`answer-${idx}`);
+        const previewEl = document.getElementById(`preview-${idx}`);
+        if (metaEl) metaEl.remove();
+        if (answerEl) answerEl.remove();
+        if (previewEl) previewEl.remove();
+      });
+      previewWrapper.appendChild(removeBtn);
+      surveyPreview.appendChild(previewWrapper);
 
-      // Different input types
-      if (type === "text") {
-        wrapper.appendChild(document.createElement("input"));
-      } 
-      else if (type === "textarea") {
-        wrapper.appendChild(document.createElement("textarea"));
-      } 
-      else if (type === "radio") {
+      // Add metadata hidden input to locomotive form: survey_questions[] (JSON)
+  const meta = document.createElement('input');
+      meta.type = 'hidden';
+  meta.name = 'survey_questions[]';
+  meta.id = `meta-${idx}`;
+      meta.value = JSON.stringify({ text: text, type: type, options: options });
+      dynamicFields.appendChild(meta);
+
+      // Add visible answer input to locomotive form with indexed names
+  const answerWrapper = document.createElement('div');
+      answerWrapper.classList.add('form-group-row');
+  answerWrapper.id = `answer-${idx}`;
+      const answerLabel = document.createElement('label');
+      answerLabel.textContent = text;
+      answerWrapper.appendChild(answerLabel);
+
+      if (type === 'text') {
+        const a = document.createElement('input');
+        a.type = 'text';
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        answerWrapper.appendChild(a);
+      } else if (type === 'textarea') {
+        const a = document.createElement('textarea');
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        answerWrapper.appendChild(a);
+      } else if (type === 'radio') {
+        const optsDiv = document.createElement('div');
         options.forEach(opt => {
-          let radio = document.createElement("input");
-          radio.type = "radio";
-          radio.name = text; // group by question
-          radio.value = opt;
-          wrapper.appendChild(radio);
-          wrapper.appendChild(document.createTextNode(opt));
-          wrapper.appendChild(document.createElement("br"));
+          const r = document.createElement('input');
+          r.type = 'radio';
+          r.name = `survey_answers[${idx}]`;
+          r.value = opt;
+          r.className = 'me-1';
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(r);
+          lbl.appendChild(document.createTextNode(opt));
+          optsDiv.appendChild(lbl);
         });
-      } 
-      else if (type === "checkbox") {
+        answerWrapper.appendChild(optsDiv);
+      } else if (type === 'dropdown') {
+        const sel = document.createElement('select');
+        sel.name = `survey_answers[${idx}]`;
+        sel.className = 'form-select';
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Select an option';
+        sel.appendChild(defaultOpt);
         options.forEach(opt => {
-          let checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.name = text;
-          checkbox.value = opt;
-          wrapper.appendChild(checkbox);
-          wrapper.appendChild(document.createTextNode(opt));
-          wrapper.appendChild(document.createElement("br"));
+          const o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          sel.appendChild(o);
         });
-      } 
-      else if (type === "dropdown") {
-        let select = document.createElement("select");
+        answerWrapper.appendChild(sel);
+      } else if (type === 'checkbox') {
+        // For checkbox we create multiple checkbox inputs with name survey_answers[IDX][] so getlist works server-side
+        const boxContainer = document.createElement('div');
         options.forEach(opt => {
-          let option = document.createElement("option");
-          option.value = opt;
-          option.textContent = opt;
-          select.appendChild(option);
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.name = `survey_answers[${idx}][]`;
+          cb.value = opt;
+          cb.className = 'me-1';
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(opt));
+          boxContainer.appendChild(lbl);
         });
-        wrapper.appendChild(select);
+        answerWrapper.appendChild(boxContainer);
       }
 
-      surveyForm.appendChild(wrapper);
+      dynamicFields.appendChild(answerWrapper);
 
       // Reset builder form
       document.getElementById("questionText").value = "";

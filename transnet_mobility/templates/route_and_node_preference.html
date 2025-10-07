@@ -13,30 +13,52 @@
                                 <h5 class="card-title">Route And Node Preference</h5>
                             </div>
                             <div class="card-body">
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Prefered Route Corridor </label>
-                                    <input type="text" class="form-control" placeholder="">
-                                </div>
-                                
-                                <div class="spec-item d-flex flex-column mb-3">
-                                    <label class="form-label">Transshipment Required</label>
-                                    <select class="form-select">
-                                      <option selected disabled>select option</option>
-                                      <option>Yes</option>
-                                                      <option>No</option>
-                                    </select>
-                                  </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Delivery Node</label>
-                                    <input type="text" class="form-control" placeholder="eg: Port / Yard">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Receiving Facility</label>
-                                    <input type="text" class="form-control" placeholder="Receiving Facility">
-                                </div>
+                                                                                <form id="routePrefForm" method="post" action="">
+                                                                                    {% csrf_token %}
+                                                                                    <input type="hidden" name="selected_spec_id" value="" />
+
+                                                                                    <div class="mb-3">
+                                                                                        <label class="form-label">Select Saved Preference</label>
+                                                                                        <div class="input-group">
+                                                                                            <select class="form-select" name="route_pref_select">
+                                                                                                <option value="" disabled selected>Select preference...</option>
+                                                                                                {% if prefs %}
+                                                                                                    {% for p in prefs %}
+                                                                                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                                                                                    {% endfor %}
+                                                                                                    <option disabled>──────────</option>
+                                                                                                {% endif %}
+                                                                                            </select>
+                                                                                            <button id="selectPrefBtn" class="btn btn-primary" type="button">Select</button>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div class="spec-item">
+                                                                                        <label class="form-label">Preferred Route Corridor </label>
+                                                                                        <input type="text" name="preferred_route_corridor" class="form-control" placeholder="">
+                                                                                    </div>
+                                  
+                                                                                    <div class="spec-item d-flex flex-column mb-3">
+                                                                                        <label class="form-label">Transshipment Required</label>
+                                                                                        <select name="transshipment_required" class="form-select">
+                                                                                            <option value="" selected disabled>select option</option>
+                                                                                            <option value="Yes">Yes</option>
+                                                                                            <option value="No">No</option>
+                                                                                        </select>
+                                                                                    </div>
+                                  
+                                                                                    <div class="spec-item">
+                                                                                        <label class="form-label">Delivery Node</label>
+                                                                                        <input type="text" name="delivery_node" class="form-control" placeholder="eg: Port / Yard">
+                                                                                    </div>
+                                  
+                                                                                    <div class="spec-item">
+                                                                                        <label class="form-label">Receiving Facility</label>
+                                                                                        <input type="text" name="receiving_facility" class="form-control" placeholder="Receiving Facility">
+                                                                                    </div>
+                                                                                                                                                                        <!-- Dynamic survey containers (questions added by builder will be placed here) -->
+                                                                                                                                                                        <div id="dynamicSurveyFields"></div>
+                                                                                                                                                                        <div id="surveyPreviewInForm" class="mb-3"></div>
                                 
                                 
                             </div>
@@ -46,14 +68,253 @@
                     
                 </div>
 
-                <div class="d-flex justify-content-end mt-4 gap-2">
-                    <button type="button" class="btn btn-outline-secondary">Cancel</button>
-                    <button type="button" class="btn btn-primary">Submit</button>
-                </div>
-            </div>
-        </div>
-    </div>
+                                <!-- Question Builder moved inside card -->
+                                <div class="builder mt-4">
+                                    <h2 class="card-title">Add Section</h2>
+                                    <div class="mb-3">
+                                        <label class="form-label">Question Text:</label>
+                                        <input class="form-control" type="text" id="questionText">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Question Type:</label>
+                                        <select class="form-select" id="questionType">
+                                            <option value="text">Short Text</option>
+                                            <option value="textarea">Long Text</option>
+                                            <option value="radio">Multiple Choice (Single)</option>
+                                            <option value="checkbox">Multiple Choice (Multiple)</option>
+                                            <option value="dropdown">Dropdown</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Options (comma separated, for radio/checkbox/dropdown):</label>
+                                        <input class="form-control" type="text" id="options">
+                                    </div>
+                                                                        <button class="btn btn-outline-dark" type="button" onclick="addQuestion()">Add Question</button>
 
-    <!-- Bootstrap 5 JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    {% endblock %}
+                                    <div class="d-flex justify-content-end mt-4 gap-2">
+                                        <button type="reset" class="btn btn-outline-secondary">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Submit</button>
+                                    </div>
+                                </div>
+
+                                </form>
+                        </div>
+                </div>
+                <!-- Saved preferences table -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">All Submitted Preferences</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Preferred Route Corridor</th>
+                                                <th>Transshipment Required</th>
+                                                <th>Delivery Node</th>
+                                                <th>Receiving Facility</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for p in prefs %}
+                                            <tr>
+                                                <td>{{ p.id }}</td>
+                                                <td>{{ p.name }}</td>
+                                                <td>{{ p.transshipment_required|default:"" }}</td>
+                                                <td>{{ p.delivery_node|default:"" }}</td>
+                                                <td>{{ p.receiving_facility|default:"" }}</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary edit-pref-btn" data-id="{{ p.id }}">Edit</button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="6">No saved preferences</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+
+        <!-- Bootstrap 5 JS Bundle with Popper -->
+                <script>
+                        (function(){
+                                const sel = document.querySelector('select[name="route_pref_select"]');
+                                const btn = document.getElementById('selectPrefBtn');
+                                if (!sel) return;
+                                const endpoint = "{% url 'api_get_route_preference_spec' %}";
+                                function fetchSpecById(id){
+                                        if (!id) return;
+                                        fetch(endpoint + '?id=' + encodeURIComponent(id))
+                                                .then(r => { if (r.status === 204) return null; return r.json(); })
+                                                .then(data => {
+                                                        if (!data) return;
+                                                        const set = (n,v) => { const el = document.querySelector('[name="'+n+'"]'); if (el) el.value = v || ''; };
+                                                        const selIdEl = document.querySelector('[name="selected_spec_id"]'); if (selIdEl) selIdEl.value = data.id || '';
+                                                        set('preferred_route_corridor', data.preferred_route_corridor);
+                                                        set('transshipment_required', data.transshipment_required);
+                                                        set('delivery_node', data.delivery_node);
+                                                        set('receiving_facility', data.receiving_facility);
+                                                }).catch(err => console.warn('route pref fetch', err));
+                                }
+                                sel.addEventListener('change', () => fetchSpecById(sel.value));
+                                if (btn) btn.addEventListener('click', () => fetchSpecById(sel.value));
+
+                                // Edit buttons in the table: populate form when clicked
+                                document.querySelectorAll('.edit-pref-btn').forEach(b => {
+                                    b.addEventListener('click', (e) => {
+                                        const id = e.currentTarget.getAttribute('data-id');
+                                        if (!id) return;
+                                        fetchSpecById(id);
+                                        // also set select dropdown if present
+                                        if (sel) {
+                                            sel.value = id;
+                                        }
+                                        // scroll to the form
+                                        const form = document.getElementById('routePrefForm');
+                                        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    });
+                                });
+                        })();
+
+    // Builder: addQuestion identical to other templates so questions/answers are added to the form prior to submit
+    let questionIndex = 0;
+    const surveyPreview = document.getElementById("surveyPreviewInForm");
+    const dynamicFields = document.getElementById("dynamicSurveyFields");
+
+    function addQuestion() {
+        const text = document.getElementById("questionText").value.trim();
+        const type = document.getElementById("questionType").value;
+        const options = document.getElementById("options").value.split(",").map(o => o.trim()).filter(o => o);
+
+        if (!text) {
+            alert("Please enter a question text");
+            return;
+        }
+
+        const idx = questionIndex++;
+
+        // Add compact preview in the form
+        const previewWrapper = document.createElement("div");
+        previewWrapper.classList.add("question");
+        previewWrapper.id = `preview-${idx}`;
+        const previewLabel = document.createElement("strong");
+        previewLabel.textContent = text;
+        previewWrapper.appendChild(previewLabel);
+        const typeBadge = document.createElement('span');
+        typeBadge.className = 'badge bg-secondary ms-2';
+        const typeMap = {
+            text: 'Short Text',
+            textarea: 'Long Text',
+            radio: 'Multiple Choice (Single)',
+            checkbox: 'Multiple Choice (Multiple)',
+            dropdown: 'Dropdown'
+        };
+        typeBadge.textContent = typeMap[type] || type;
+        previewWrapper.appendChild(typeBadge);
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => {
+            const metaEl = document.getElementById(`meta-${idx}`);
+            const answerEl = document.getElementById(`answer-${idx}`);
+            const previewEl = document.getElementById(`preview-${idx}`);
+            if (metaEl) metaEl.remove();
+            if (answerEl) answerEl.remove();
+            if (previewEl) previewEl.remove();
+        });
+        previewWrapper.appendChild(removeBtn);
+        if (surveyPreview) surveyPreview.appendChild(previewWrapper);
+
+        // Add metadata hidden input to form: survey_questions[] (JSON)
+        const meta = document.createElement('input');
+        meta.type = 'hidden';
+        meta.name = 'survey_questions[]';
+        meta.id = `meta-${idx}`;
+        meta.value = JSON.stringify({ text: text, type: type, options: options });
+        if (dynamicFields) dynamicFields.appendChild(meta);
+
+        // Add visible answer input to form with indexed names
+        const answerWrapper = document.createElement('div');
+        answerWrapper.classList.add('form-group-row');
+        answerWrapper.id = `answer-${idx}`;
+        const answerLabel = document.createElement('label');
+        answerLabel.textContent = text;
+        answerWrapper.appendChild(answerLabel);
+
+        if (type === 'text') {
+            const a = document.createElement('input');
+            a.type = 'text';
+            a.name = `survey_answers[${idx}]`;
+            a.className = 'form-control';
+            answerWrapper.appendChild(a);
+        } else if (type === 'textarea') {
+            const a = document.createElement('textarea');
+            a.name = `survey_answers[${idx}]`;
+            a.className = 'form-control';
+            answerWrapper.appendChild(a);
+        } else if (type === 'radio') {
+            const optsDiv = document.createElement('div');
+            options.forEach(opt => {
+                const r = document.createElement('input');
+                r.type = 'radio';
+                r.name = `survey_answers[${idx}]`;
+                r.value = opt;
+                r.className = 'me-1';
+                const lbl = document.createElement('label');
+                lbl.className = 'me-3';
+                lbl.appendChild(r);
+                lbl.appendChild(document.createTextNode(opt));
+                optsDiv.appendChild(lbl);
+            });
+            answerWrapper.appendChild(optsDiv);
+        } else if (type === 'dropdown') {
+            const sel = document.createElement('select');
+            sel.name = `survey_answers[${idx}]`;
+            sel.className = 'form-select';
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = 'Select an option';
+            sel.appendChild(defaultOpt);
+            options.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                sel.appendChild(o);
+            });
+            answerWrapper.appendChild(sel);
+        } else if (type === 'checkbox') {
+            const boxContainer = document.createElement('div');
+            options.forEach(opt => {
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.name = `survey_answers[${idx}][]`;
+                cb.value = opt;
+                cb.className = 'me-1';
+                const lbl = document.createElement('label');
+                lbl.className = 'me-3';
+                lbl.appendChild(cb);
+                lbl.appendChild(document.createTextNode(opt));
+                boxContainer.appendChild(lbl);
+            });
+            answerWrapper.appendChild(boxContainer);
+        }
+
+        if (dynamicFields) dynamicFields.appendChild(answerWrapper);
+
+        // Reset builder form
+        document.getElementById("questionText").value = "";
+        document.getElementById("options").value = "";
+    }
+                </script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        {% endblock %}

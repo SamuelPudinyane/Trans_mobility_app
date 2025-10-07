@@ -2,34 +2,191 @@
 
 {% block title %}Train Tracker - South Africa{% endblock %}
 {% block content %}
-  
-  <div id="map" class="mt-4"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script>
-  // Initialize the map
-  const map = L.map('map').setView([-30.5595, 22.9375], 6);
-
-  // OpenRailwayMap tiles only
-  L.tileLayer('https://a.tile.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'Railways: <a href="http://www.openrailwaymap.org/">OpenRailwayMap</a>'
-  }).addTo(map);
-
-  // Show device location
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const marker = L.marker([lat, lng]).addTo(map);
-        marker.bindPopup('📍 You are here').openPopup();
-        map.setView([lat, lng], 13);
-      },
-      () => alert("Could not retrieve your location.")
-    );
-  } else {
-    alert("Geolocation is not supported by this browser.");
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css" />
+<style>
+  #map { width: 100%; height: 600px; }
+  /* make the map area visibly distinct if tiles fail */
+  #map { background: #f6f6f6; position: relative; }
+  #map-status { position: absolute; left: 8px; top: 8px; z-index: 2000; background: rgba(255,255,255,0.9); padding: 6px 8px; border-radius: 4px; font-size: 0.9rem; border: 1px solid #ddd; }
+  .ol-popup {
+    position: absolute;
+    background-color: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    min-width: 160px;
   }
+  .ol-popup:after, .ol-popup:before { display: none; }
+</style>
+<div id="map" class="mt-4"></div>
+<div id="map-status">initializing map...</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
+<script>
+  window.addEventListener('load', () => {
+    try {
+      console.log('Initializing OpenLayers map...');
+      // helper to project coords
+      const toMap = (lon, lat) => ol.proj.fromLonLat([lon, lat]);
+
+      // South Africa bounding box in EPSG:3857
+      const saExtent = ol.proj.transformExtent([16.45, -35.27, 32.89, -22.13], 'EPSG:4326', 'EPSG:3857');
+
+      // fallback tile (SVG) used when a tile fails to load
+      const fallbackSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><rect width='100%' height='100%' fill='%23e9e9e9'/></svg>";
+      let tileErrorCount = 0;
+
+      // helper to create a tile source with error handling
+      function createXYZ(urlTemplate, maxZoom){
+        return new ol.source.XYZ({
+          url: urlTemplate,
+          maxZoom: maxZoom || 19,
+          crossOrigin: 'anonymous',
+          tileLoadFunction: function(img, src) {
+            img.onload = function(){ /* ok */ };
+            img.onerror = function(e){
+              tileErrorCount++;
+              console.warn('Tile failed to load', src, e);
+              try { img.src = fallbackSVG; } catch(err){ console.warn('fallback failed', err); }
+              const st = document.getElementById('map-status');
+              if (st) st.innerText = `tiles failed: ${tileErrorCount}`;
+              // after several failures, switch the basemap to OSM as a fallback
+              if (tileErrorCount === 6) {
+                try {
+                  const newUrl = 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png';
+                  const baseLayer = base; // captured from outer scope
+                  if (baseLayer && baseLayer.getSource && typeof baseLayer.getSource().setUrl === 'function') {
+                    baseLayer.getSource().setUrl(newUrl);
+                    if (st) st.innerText = 'tiles failed: switching basemap to OpenStreetMap';
+                  }
+                } catch(swapErr) { console.warn('Basemap swap failed', swapErr); }
+              }
+            };
+            try { img.src = src; } catch(err){ img.src = fallbackSVG; }
+          }
+        });
+      }
+
+      // Base (very faint) no-labels basemap
+      const base = new ol.layer.Tile({ source: createXYZ('https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png', 19), opacity: 0.18 });
+
+      // Railway-only tiles
+      const railway = new ol.layer.Tile({ source: createXYZ('https://a.tile.openrailwaymap.org/standard/{z}/{x}/{y}.png', 19), opacity: 1 });
+
+      // Vector layer for user markers
+      const vectorSource = new ol.source.Vector();
+      const vectorLayer = new ol.layer.Vector({ source: vectorSource });
+
+      const map = new ol.Map({
+        target: 'map',
+        layers: [ base, railway, vectorLayer ],
+        view: new ol.View({ center: toMap(28.0, -26.2), zoom: 6, extent: saExtent }),
+        controls: ol.control.defaults().extend([ new ol.control.ScaleLine() ])
+      });
+
+      const statusEl = document.getElementById('map-status');
+      if (statusEl) statusEl.innerText = 'map initialized — loading tiles...';
+
+      // ensure map size is updated (useful if container was hidden)
+      setTimeout(() => { try { map.updateSize(); console.log('map.updateSize() called'); } catch(e){console.warn(e);} }, 300);
+      window.addEventListener('resize', () => { try { map.updateSize(); } catch(e){} });
+
+      // Keep map constrained to SA extent
+      map.getView().on('change:center', () => {
+        const view = map.getView();
+        const center = view.getCenter();
+        if (!ol.extent.containsCoordinate(saExtent, center)) {
+          view.setCenter(ol.extent.getClosestPoint(saExtent, center));
+        }
+      });
+
+      // Create a popup overlay
+      const popup = document.createElement('div');
+      popup.className = 'ol-popup';
+      const overlay = new ol.Overlay({ element: popup, positioning: 'bottom-center', offset: [0, -12] });
+      map.addOverlay(overlay);
+
+      // manage markers by user id
+      const userFeatures = {};
+
+      function formatPopup(item) {
+        return `<b>${item.user.email}</b><br>Role: ${item.user.role}<br>Phone: ${item.user.phone || 'N/A'}<br>Last seen: ${item.timestamp}`;
+      }
+
+      function loadLocations() {
+        fetch('/api/update-location/')
+          .then(r => r.json())
+          .then(data => {
+            data.forEach(item => {
+              const id = item.user.id;
+              const coord = toMap(item.lng, item.lat);
+              if (userFeatures[id]) {
+                userFeatures[id].getGeometry().setCoordinates(coord);
+                userFeatures[id].set('popup', formatPopup(item));
+              } else {
+                const feat = new ol.Feature({ geometry: new ol.geom.Point(coord), id });
+                feat.setStyle(new ol.style.Style({ image: new ol.style.Icon({ src: '/static/images/marker-icon.png', scale: 0.8 }) }));
+                feat.set('popup', formatPopup(item));
+                vectorSource.addFeature(feat);
+                userFeatures[id] = feat;
+              }
+            });
+          }).catch(e => console.error('loadLocations', e));
+      }
+
+      // click to show popup
+      map.on('singleclick', function(evt) {
+        overlay.setPosition(undefined);
+        map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+          const coord = feature.getGeometry().getCoordinates();
+          popup.innerHTML = feature.get('popup') || 'No info';
+          overlay.setPosition(coord);
+        });
+      });
+
+      // send current device location to server and show marker
+      function sendLocation() {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(pos => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          // update or create 'me' feature
+          if (userFeatures['me']) {
+            userFeatures['me'].getGeometry().setCoordinates(toMap(lng, lat));
+          } else {
+            const me = new ol.Feature({ geometry: new ol.geom.Point(toMap(lng, lat)), id: 'me' });
+            me.setStyle(new ol.style.Style({ image: new ol.style.Circle({ radius: 7, fill: new ol.style.Fill({color: '#1976d2'}), stroke: new ol.style.Stroke({color: '#fff', width: 2}) }) }));
+            me.set('popup', '📍 You are here');
+            vectorSource.addFeature(me);
+            userFeatures['me'] = me;
+          }
+          map.getView().setCenter(toMap(lng, lat));
+          map.getView().setZoom(13);
+
+          // post to server
+          fetch('/api/update-location/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ latitude: lat, longitude: lng }) }).catch(()=>{});
+        }, err => console.warn('Geolocation error', err));
+      }
+
+      // initialize
+      loadLocations();
+      sendLocation();
+      setInterval(loadLocations, 10000);
+      setInterval(sendLocation, 5000);
+
+      // report tile status periodically
+      setInterval(() => {
+        const st = document.getElementById('map-status');
+        if (st) st.innerText = tileErrorCount ? `tiles failed: ${tileErrorCount}` : 'tiles loading';
+      }, 2000);
+    } catch (err) {
+      console.error('Map init failed', err);
+      const el = document.getElementById('map');
+      if (el) el.innerText = 'Map failed to load: ' + (err.message || err);
+    }
+  });
 </script>
-  {% endblock %}
+
+{% endblock %}

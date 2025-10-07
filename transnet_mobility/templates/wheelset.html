@@ -18,75 +18,97 @@
                         <div class="card ">
                             <div class="card-header"
                             <h5 class="card-title">Wheelset Specifications</h5></div>
-                            <div class="card-body">
-                                
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Wheel Profile</label>
-                                    <input type="text" class="form-control" placeholder="Enter wheel profile">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Diameter differentials</label>
-                                    <input type="text" class="form-control" placeholder="Enter diameter differentials">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">symmetry</label>
-                                    <input type="text" class="form-control" placeholder="Enter symmetry">
-                                </div>
-                                
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Radial Run Out</label>
-                                    <input type="text" class="form-control" placeholder="Enter radial run out">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Axial Run Out</label>
-                                    <input type="text" class="form-control" placeholder="Enter axial run out">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Witness Marks</label>
-                                    <input type="text" class="form-control" placeholder="Enter witness marks">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Surface Roughness</label>
-                                    <input type="text" class="form-control" placeholder="Enter surface roughness">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Stenciling</label>
-                                    <input type="text" class="form-control" placeholder="Enter stenciling">
-                                </div>
-                                
-                                <div class="spec-item">
-                                    <label class="form-label">Main Machine Diameter</label>
-                                    <input type="text" class="form-control" placeholder="Enter main machine diameter">
-                                </div>
-                            </div>
-                        </div>
+              <div class="card-body">
+                <form id="wheelsetForm" method="post" action="">
+                  {% csrf_token %}
+                  <input type="hidden" name="selected_spec_id" value="" />
+                  <div class="mb-3">
+                    <label class="form-label">Select Wheelset</label>
+                    <div class="input-group">
+                      <select class="form-select" name="wheel_select">
+                        <option value="" disabled selected>Select wheelset...</option>
+                        {% if wheels %}
+                          {% for w in wheels %}
+                            <option value="{{ w.id }}">{{ w.name }}</option>
+                          {% endfor %}
+                          <option disabled></option>
+                        {% endif %}
+                      </select>
+                      <button id="selectWheelBtn" class="btn btn-primary" type="button">Select</button>
                     </div>
-
-                    
+                  </div>
+                  <div id="dynamicSurveyFields"></div>
+                  <div id="surveyPreviewInForm" class="mb-3"></div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">Wheel Profile</label>
+                  <input type="text" name="wheel_profile" class="form-control" placeholder="Enter wheel profile">
+                </div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">Diameter differentials</label>
+                  <input type="text" name="diameter_differentials" class="form-control" placeholder="Enter diameter differentials">
+                </div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">symmetry</label>
+                  <input type="text" name="symmetry" class="form-control" placeholder="Enter symmetry">
+                </div>
+                                
+                                
+                <div class="spec-item">
+                  <label class="form-label">Radial Run Out</label>
+                  <input type="text" name="radial_run_out" class="form-control" placeholder="Enter radial run out">
+                </div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">Axial Run Out</label>
+                  <input type="text" name="axial_run_out" class="form-control" placeholder="Enter axial run out">
+                </div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">Witness Marks</label>
+                  <input type="text" name="witness_marks" class="form-control" placeholder="Enter witness marks">
+                </div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">Surface Roughness</label>
+                  <input type="text" name="surface_roughness" class="form-control" placeholder="Enter surface roughness">
+                </div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">Stenciling</label>
+                  <input type="text" name="stenciling" class="form-control" placeholder="Enter stenciling">
+                </div>
+                                
+                <div class="spec-item">
+                  <label class="form-label">Main Machine Diameter</label>
+                  <input type="text" name="main_machine_diameter" class="form-control" placeholder="Enter main machine diameter">
                 </div>
 
                 <div class="d-flex justify-content-end mt-4 gap-2">
-                    <button type="button" class="btn btn-outline-secondary">Cancel</button>
-                    <button type="button" class="btn btn-primary">Submit</button>
+                  <button type="reset" class="btn btn-outline-secondary">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Submit</button>
                 </div>
+                </form>
+              </div>
             </div>
+          </div>
+
+
+        </div>
+      </div>
         </div>
     </div>
-        <!-- Question Builder -->
-  <div class="builder p-4 m-4">
+        <!-- Question Builder inside same card -->
+  <div class="builder mt-4">
     <h2>Add Section</h2>
-    <label>Question Text:
+    <div class="mb-3">
+      <label class="form-label">Question Text:</label>
       <input class="form-control" type="text" id="questionText">
-    </label>
-    <label>Question Type:
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Question Type:</label>
       <select class="form-select" id="questionType">
         <option value="text">Short Text</option>
         <option value="textarea">Long Text</option>
@@ -94,21 +116,19 @@
         <option value="checkbox">Multiple Choice (Multiple)</option>
         <option value="dropdown">Dropdown</option>
       </select>
-    </label>
-    <label>Options (comma separated, for radio/checkbox/dropdown):
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Options (comma separated, for radio/checkbox/dropdown):</label>
       <input class="form-control" type="text" id="options">
-    </label>
+    </div>
     <button class="btn btn-outline-dark" onclick="addQuestion()">Add Question</button>
   </div>
 
-  <!-- Survey Display -->
-  <div class="survey p-4 m-4">
-    <h2>Survey</h2>
-    <form id="surveyForm"></form>
-    <button type="submit" class="btn btn-outline-dark" form="surveyForm">Submit</button>
-  </div>
- <script>
-    let surveyForm = document.getElementById("surveyForm");
+  <!-- survey preview moved into the wheelset form above -->
+  <script>
+  let questionIndex = 0;
+  const surveyPreview = document.getElementById("surveyPreviewInForm");
+  const dynamicFields = document.getElementById("dynamicSurveyFields");
 
     function addQuestion() {
       const text = document.getElementById("questionText").value.trim();
@@ -120,60 +140,151 @@
         return;
       }
 
-      let wrapper = document.createElement("div");
-      wrapper.classList.add("question");
+      const idx = questionIndex++;
 
-      let label = document.createElement("label");
-      label.textContent = text;
-      wrapper.appendChild(label);
+      // Add compact preview in the form
+      const previewWrapper = document.createElement("div");
+      previewWrapper.classList.add("question");
+      previewWrapper.id = `preview-${idx}`;
+      const previewLabel = document.createElement("strong");
+      previewLabel.textContent = text;
+      previewWrapper.appendChild(previewLabel);
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'badge bg-secondary ms-2';
+      const typeMap = {
+        text: 'Short Text',
+        textarea: 'Long Text',
+        radio: 'Multiple Choice (Single)',
+        checkbox: 'Multiple Choice (Multiple)',
+        dropdown: 'Dropdown'
+      };
+      typeBadge.textContent = typeMap[type] || type;
+      previewWrapper.appendChild(typeBadge);
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn btn-sm btn-outline-danger ms-2';
+      removeBtn.textContent = 'Remove';
+      removeBtn.addEventListener('click', () => {
+        const metaEl = document.getElementById(`meta-${idx}`);
+        const answerEl = document.getElementById(`answer-${idx}`);
+        const previewEl = document.getElementById(`preview-${idx}`);
+        if (metaEl) metaEl.remove();
+        if (answerEl) answerEl.remove();
+        if (previewEl) previewEl.remove();
+      });
+      previewWrapper.appendChild(removeBtn);
+      surveyPreview.appendChild(previewWrapper);
 
-      // Different input types
-      if (type === "text") {
-        wrapper.appendChild(document.createElement("input"));
-      } 
-      else if (type === "textarea") {
-        wrapper.appendChild(document.createElement("textarea"));
-      } 
-      else if (type === "radio") {
+      // Add metadata hidden input to wheelset form: survey_questions[] (JSON)
+      const meta = document.createElement('input');
+      meta.type = 'hidden';
+      meta.name = 'survey_questions[]';
+      meta.id = `meta-${idx}`;
+      meta.value = JSON.stringify({ text: text, type: type, options: options });
+      dynamicFields.appendChild(meta);
+
+      // Add visible answer input to wheelset form with indexed names
+      const answerWrapper = document.createElement('div');
+      answerWrapper.classList.add('form-group-row');
+      answerWrapper.id = `answer-${idx}`;
+      const answerLabel = document.createElement('label');
+      answerLabel.textContent = text;
+      answerWrapper.appendChild(answerLabel);
+
+      if (type === 'text') {
+        const a = document.createElement('input');
+        a.type = 'text';
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        answerWrapper.appendChild(a);
+      } else if (type === 'textarea') {
+        const a = document.createElement('textarea');
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        answerWrapper.appendChild(a);
+      } else if (type === 'radio') {
+        const optsDiv = document.createElement('div');
         options.forEach(opt => {
-          let radio = document.createElement("input");
-          radio.type = "radio";
-          radio.name = text; // group by question
-          radio.value = opt;
-          wrapper.appendChild(radio);
-          wrapper.appendChild(document.createTextNode(opt));
-          wrapper.appendChild(document.createElement("br"));
+          const r = document.createElement('input');
+          r.type = 'radio';
+          r.name = `survey_answers[${idx}]`;
+          r.value = opt;
+          r.className = 'me-1';
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(r);
+          lbl.appendChild(document.createTextNode(opt));
+          optsDiv.appendChild(lbl);
         });
-      } 
-      else if (type === "checkbox") {
+        answerWrapper.appendChild(optsDiv);
+      } else if (type === 'dropdown') {
+        const sel = document.createElement('select');
+        sel.name = `survey_answers[${idx}]`;
+        sel.className = 'form-select';
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Select an option';
+        sel.appendChild(defaultOpt);
         options.forEach(opt => {
-          let checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.name = text;
-          checkbox.value = opt;
-          wrapper.appendChild(checkbox);
-          wrapper.appendChild(document.createTextNode(opt));
-          wrapper.appendChild(document.createElement("br"));
+          const o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          sel.appendChild(o);
         });
-      } 
-      else if (type === "dropdown") {
-        let select = document.createElement("select");
+        answerWrapper.appendChild(sel);
+      } else if (type === 'checkbox') {
+        const boxContainer = document.createElement('div');
         options.forEach(opt => {
-          let option = document.createElement("option");
-          option.value = opt;
-          option.textContent = opt;
-          select.appendChild(option);
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.name = `survey_answers[${idx}][]`;
+          cb.value = opt;
+          cb.className = 'me-1';
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(opt));
+          boxContainer.appendChild(lbl);
         });
-        wrapper.appendChild(select);
+        answerWrapper.appendChild(boxContainer);
       }
 
-      surveyForm.appendChild(wrapper);
+      dynamicFields.appendChild(answerWrapper);
 
       // Reset builder form
       document.getElementById("questionText").value = "";
       document.getElementById("options").value = "";
     }
   </script>
+    <script>
+      (function(){
+        const sel = document.querySelector('select[name="wheel_select"]');
+        const btn = document.getElementById('selectWheelBtn');
+        if (!sel) return;
+        const endpoint = "{% url 'api_get_wheelset_spec' %}";
+        function fetchSpecById(id){
+          if (!id) return;
+          fetch(endpoint + '?id=' + encodeURIComponent(id))
+            .then(r => { if (r.status === 204) return null; return r.json(); })
+            .then(data => {
+              if (!data) return;
+              const set = (n,v) => { const el = document.querySelector('[name="'+n+'"]'); if (el) el.value = v || ''; };
+              const selIdEl = document.querySelector('[name="selected_spec_id"]'); if (selIdEl) selIdEl.value = data.id || '';
+              set('wheel_profile', data.wheel_profile);
+              set('diameter_differentials', data.diameter_differentials);
+              set('symmetry', data.symmetry);
+              set('radial_run_out', data.radial_run_out);
+              set('axial_run_out', data.axial_run_out);
+              set('witness_marks', data.witness_marks);
+              set('surface_roughness', data.surface_roughness);
+              set('stenciling', data.stenciling);
+              set('main_machine_diameter', data.main_machine_diameter);
+            }).catch(err => console.warn('wheelset fetch', err));
+        }
+        sel.addEventListener('change', () => fetchSpecById(sel.value));
+        if (btn) btn.addEventListener('click', () => fetchSpecById(sel.value));
+      })();
+    </script>
     <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% endblock %}
