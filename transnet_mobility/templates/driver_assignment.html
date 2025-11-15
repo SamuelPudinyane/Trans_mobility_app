@@ -1,195 +1,616 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Assign Locomotive to Driver{% endblock %}
+{% block title %}Assign Locomotive to Driver - Transnet Mobility{% endblock %}
 {% block content %}
-            <!-- Main Content -->
-            <div class="p-4">
-                <form method="post">
-                    {% csrf_token %}
-                    <h2 class="section-title">ASSIGN DRIVER TO LOCOMOTIVE</h2>
-                   
-                    <div class="filter-section">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <select class="form-select" id="locomotiveSelect" name="locomotive_id" required>
-                                        <option value="" selected disabled>Select locomotive...</option>
-                                        {% for loco in locomotives %}
-                                            <option value="{{ loco.id }}">{{ loco.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-container">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>FULL NAMES</th>
-                                    <th>ROLES</th>
-                                    <th>ACTION</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for d in available_drivers %}
-                                <tr>
-                                    <td>{{ d.first_name }} {{ d.last_name }}</td>
-                                    <td>Driver</td>
-                                    <td>
-                                        <input type="checkbox" class="form-check-input driver-checkbox" name="driver_ids[]" value="{{ d.User_id }}" id="drv-{{ d.User_id }}">
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="3">No available drivers (all drivers are already assigned)</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Hidden inputs not needed; using checkbox list 'driver_ids[]' -->
-                    
-                    <!-- Form buttons -->
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="reset" class="btn btn-outline-dark">Cancel</button>
-                        <button type="submit" class="btn btn-dark">Submit</button>
-                    </div>
-                </form>
+
+<style>
+    .assignment-container {
+        max-width: 1400px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(227, 25, 55, 0.3);
+    }
+    
+    .page-header h1 {
+        margin: 0 0 5px 0;
+        font-size: 32px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .page-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 16px;
+    }
+    
+    .assignment-form-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 3px solid #E31937;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-title i {
+        color: #E31937;
+    }
+    
+    .locomotive-select-group {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    
+    .locomotive-select-group label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .locomotive-select-group label i {
+        color: #E31937;
+    }
+    
+    .locomotive-select-group select {
+        padding: 12px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.3s;
+    }
+    
+    .locomotive-select-group select:focus {
+        border-color: #E31937;
+        box-shadow: 0 0 0 0.2rem rgba(227, 25, 55, 0.1);
+    }
+    
+    .drivers-table-container {
+        overflow-x: auto;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    
+    .drivers-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    
+    .drivers-table thead {
+        background: linear-gradient(135deg, #333 0%, #555 100%);
+        color: white;
+    }
+    
+    .drivers-table thead th {
+        padding: 15px;
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        border: none;
+        letter-spacing: 0.5px;
+    }
+    
+    .drivers-table tbody td {
+        padding: 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .drivers-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .driver-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #E31937;
+    }
+    
+    .form-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+    
+    .btn-submit {
+        background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-submit:hover {
+        background: linear-gradient(135deg, #b8152c 0%, #9a1224 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(227, 25, 55, 0.3);
+    }
+    
+    .assignments-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+    }
+    
+    .assignments-table {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .assignments-table thead {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+    }
+    
+    .assignments-table thead th {
+        padding: 15px;
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        border: none;
+    }
+    
+    .assignments-table tbody td {
+        padding: 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .assignments-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .btn-reassign {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-right: 8px;
+    }
+    
+    .btn-reassign:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 3px 8px rgba(0, 123, 255, 0.3);
+    }
+    
+    .btn-remove {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-remove:hover {
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 3px 8px rgba(220, 53, 69, 0.3);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    .modal-header {
+        background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    
+    .modal-title {
+        font-weight: 600;
+    }
+    
+    .modal-body {
+        padding: 25px;
+    }
+    
+    .modal-footer {
+        padding: 15px 25px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    @media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 24px;
+        }
+        
+        .assignment-form-card,
+        .assignments-card {
+            padding: 20px;
+        }
+        
+        .form-buttons {
+            flex-direction: column;
+        }
+        
+        .form-buttons button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="assignment-container">
+    <div class="page-header">
+        <h1>
+            <i class="fas fa-user-plus"></i>
+            Driver Assignment
+        </h1>
+        <p>Assign drivers to locomotives and manage existing assignments</p>
+    </div>
+    
+    <!-- Assignment Form -->
+    <div class="assignment-form-card">
+        <form method="post">
+            {% csrf_token %}
+            <h2 class="section-title">
+                <i class="fas fa-clipboard-list"></i>
+                Assign Driver to Locomotive
+            </h2>
+           
+            <div class="locomotive-select-group">
+                <label for="locomotiveSelect">
+                    <i class="fas fa-train"></i>
+                    Select Locomotive
+                </label>
+                <select class="form-select" id="locomotiveSelect" name="locomotive_id" required>
+                    <option value="" selected disabled>Choose a locomotive...</option>
+                    {% for loco in locomotives %}
+                        <option value="{{ loco.id }}">
+                            {{ loco.name }} 
+                            {% if loco.wagon_count > 0 %}
+                                (✓ {{ loco.wagon_count }} wagon{{ loco.wagon_count|pluralize }})
+                            {% else %}
+                                (⚠ No wagons - optional)
+                            {% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fas fa-info-circle"></i> Select the locomotive to assign drivers to. <strong>Note:</strong> Wagons are optional but recommended.
+                </small>
             </div>
+            
+            <div class="drivers-table-container">
+                <table class="drivers-table table">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-user"></i> Full Name</th>
+                            <th><i class="fas fa-id-badge"></i> Role</th>
+                            <th><i class="fas fa-check-square"></i> Select</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in available_drivers %}
+                        <tr>
+                            <td>
+                                <strong>{{ d.first_name }} {{ d.last_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ d.email }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">Driver</span>
+                            </td>
+                            <td>
+                                <input type="checkbox" class="form-check-input driver-checkbox" name="driver_ids[]" value="{{ d.User_id }}" id="drv-{{ d.User_id }}">
+                                <label for="drv-{{ d.User_id }}" style="cursor: pointer; margin-left: 8px;">Assign</label>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <i class="fas fa-users-slash"></i>
+                                    <p>No available drivers. All drivers are currently assigned.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if available_drivers %}
+            <div class="alert alert-info mt-3" style="border-left: 4px solid #17a2b8;">
+                <i class="fas fa-info-circle"></i>
+                <strong>Note:</strong> You can assign a maximum of 2 drivers to a locomotive.
+            </div>
+            {% endif %}
+            
+            <div class="form-buttons">
+                <button type="reset" class="btn-cancel">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Submit Assignment
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Current Assignments -->
+    <div class="assignments-card">
+        <h2 class="section-title">
+            <i class="fas fa-list-check"></i>
+            Current Assignments
+        </h2>
+        
+        <div class="drivers-table-container">
+            <table class="assignments-table table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-user"></i> Driver</th>
+                        <th><i class="fas fa-envelope"></i> Email</th>
+                        <th><i class="fas fa-train"></i> Locomotive</th>
+                        <th><i class="fas fa-clock"></i> Assigned At</th>
+                        <th><i class="fas fa-cog"></i> Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in assignments %}
+                    <tr>
+                        <td>
+                            <strong>{{ a.driver_name }}</strong>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ a.driver_email }}</small>
+                        </td>
+                        <td>
+                            <span class="badge" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); font-size: 13px;">
+                                {{ a.locomotive_name }}
+                            </span>
+                        </td>
+                        <td>
+                            <small>{{ a.assigned_at|date:"M d, Y H:i" }}</small>
+                        </td>
+                        <td>
+                            <button type="button" class="btn-reassign" data-bs-toggle="modal" data-bs-target="#reassignModal" data-assignment-id="{{ a.id }}" data-current-loco-id="{{ a.locomotive_id }}">
+                                <i class="fas fa-sync-alt"></i> Reassign
+                            </button>
+                            <button type="button" class="btn-remove" data-bs-toggle="modal" data-bs-target="#unassignModal" data-assignment-id="{{ a.id }}">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p>No assignments yet. Use the form above to assign drivers to locomotives.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <!-- Bootstrap 5 JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // limit driver selection to maximum 2
-        (function(){
-            const checkboxes = document.querySelectorAll('.driver-checkbox');
-            function updateLimit(e){
-                const checked = Array.from(checkboxes).filter(c=>c.checked);
-                if(checked.length > 2){
-                    // uncheck the last clicked
-                    e.target.checked = false;
-                    alert('You can assign a maximum of 2 drivers to a locomotive');
-                }
+<script>
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing modal handlers...');
+        
+        // Limit driver selection to maximum 2
+        const checkboxes = document.querySelectorAll('.driver-checkbox');
+        function updateLimit(e){
+            const checked = Array.from(checkboxes).filter(c=>c.checked);
+            if(checked.length > 2){
+                e.target.checked = false;
+                alert('You can assign a maximum of 2 drivers to a locomotive');
             }
-            checkboxes.forEach(cb => cb.addEventListener('change', updateLimit));
-        })();
-    </script>
-        <!-- Assignments table -->
-        <div class="p-4 mt-4">
-                <h3 class="section-title">Current Assignments</h3>
-                <div class="table-container">
-                        <table class="table table-striped">
-                                <thead>
-                                        <tr>
-                                                <th>Driver</th>
-                                                <th>Email</th>
-                                                <th>Locomotive</th>
-                                                <th>Assigned At</th>
-                                                <th>Actions</th>
-                                        </tr>
-                                </thead>
-                                <tbody>
-                                        {% for a in assignments %}
-                                        <tr>
-                                                <td>{{ a.driver_name }}</td>
-                                                <td>{{ a.driver_email }}</td>
-                                                <td>{{ a.locomotive_name }}</td>
-                                                <td>{{ a.assigned_at }}</td>
-                                                <td>
-                                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reassignModal" data-assignment-id="{{ a.id }}" data-current-loco-id="{{ a.locomotive_id }}">Reassign</button>
-                                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#unassignModal" data-assignment-id="{{ a.id }}">Remove</button>
-                                                </td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr><td colspan="5">No assignments yet</td></tr>
-                                        {% endfor %}
-                                </tbody>
-                        </table>
-                </div>
-        </div>
+        }
+        checkboxes.forEach(cb => cb.addEventListener('change', updateLimit));
+        
+        // populate modal hidden fields
+        var unassignModal = document.getElementById('unassignModal');
+        console.log('Unassign modal element:', unassignModal);
+        if(unassignModal){
+            unassignModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var assignmentId = button.getAttribute('data-assignment-id');
+                console.log('Unassign modal opening with assignment ID:', assignmentId);
+                var hiddenInput = document.getElementById('unassign-assignment-id');
+                console.log('Hidden input element:', hiddenInput);
+                hiddenInput.value = assignmentId;
+                console.log('Set hidden input value to:', hiddenInput.value);
+            });
+        } else {
+            console.error('Unassign modal element not found!');
+        }
 
-        <!-- Unassign Confirmation Modal -->
-        <div class="modal fade" id="unassignModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <form method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="unassign">
-                        <input type="hidden" name="assignment_id" id="unassign-assignment-id">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Confirm Remove Assignment</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            Are you sure you want to remove this assignment?
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-danger">Remove</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reassign Modal -->
-        <div class="modal fade" id="reassignModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <form method="post">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="reassign">
-                        <input type="hidden" name="assignment_id" id="reassign-assignment-id">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Reassign Driver</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label for="newLocomotive" class="form-label">Select target locomotive</label>
-                                <select class="form-select" id="newLocomotive" name="new_locomotive_id" required>
-                                        <option value="" selected disabled>Select locomotive...</option>
-                                        {% for loco in locomotives %}
-                                                <option value="{{ loco.id }}">{{ loco.name }}</option>
-                                        {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Reassign</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <script>
-                // populate modal hidden fields
-                var unassignModal = document.getElementById('unassignModal');
-                if(unassignModal){
-                        unassignModal.addEventListener('show.bs.modal', function (event) {
-                                var button = event.relatedTarget;
-                                var assignmentId = button.getAttribute('data-assignment-id');
-                                document.getElementById('unassign-assignment-id').value = assignmentId;
-                        });
+        var reassignModal = document.getElementById('reassignModal');
+        console.log('Reassign modal element:', reassignModal);
+        if(reassignModal){
+            reassignModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var assignmentId = button.getAttribute('data-assignment-id');
+                var currentLoco = button.getAttribute('data-current-loco-id');
+                console.log('Reassign modal opening with assignment ID:', assignmentId, 'current loco:', currentLoco);
+                document.getElementById('reassign-assignment-id').value = assignmentId;
+                // set the select to current loco so user can pick a different one
+                var sel = document.getElementById('newLocomotive');
+                if(sel) sel.value = currentLoco;
+            });
+        } else {
+            console.error('Reassign modal element not found!');
+        }
+        
+        // Debug form submission for unassign modal
+        var unassignForm = document.querySelector('#unassignModal form');
+        console.log('Unassign form element:', unassignForm);
+        if (unassignForm) {
+            unassignForm.addEventListener('submit', function(e) {
+                var assignmentId = document.getElementById('unassign-assignment-id').value;
+                console.log('Unassign form submitting with assignment_id:', assignmentId);
+                if (!assignmentId) {
+                    console.error('ERROR: No assignment ID set!');
+                    e.preventDefault();
+                    alert('Error: No assignment ID. Please try again.');
+                    return false;
                 }
+            });
+        }
+    });
+</script>
 
-                var reassignModal = document.getElementById('reassignModal');
-                if(reassignModal){
-                        reassignModal.addEventListener('show.bs.modal', function (event) {
-                                var button = event.relatedTarget;
-                                var assignmentId = button.getAttribute('data-assignment-id');
-                                var currentLoco = button.getAttribute('data-current-loco-id');
-                                document.getElementById('reassign-assignment-id').value = assignmentId;
-                                // set the select to current loco so user can pick a different one
-                                var sel = document.getElementById('newLocomotive');
-                                if(sel) sel.value = currentLoco;
-                        });
-                }
-        </script>
-    
+<!-- Reassign Modal -->
+<div class="modal fade" id="reassignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-sync-alt"></i> Reassign Locomotive
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'driver_assignment' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reassign">
+                <input type="hidden" name="assignment_id" id="reassign-assignment-id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newLocomotive" class="form-label" style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-train" style="color: #E31937;"></i>
+                            Select New Locomotive
+                        </label>
+                        <select class="form-select" id="newLocomotive" name="new_locomotive_id" required style="padding: 12px; border: 2px solid #e9ecef; border-radius: 8px;">
+                            <option value="" selected disabled>Choose a locomotive...</option>
+                            {% for loco in locomotives %}
+                                <option value="{{ loco.id }}">{{ loco.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-info-circle"></i> Select the new locomotive for this driver
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 20px;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-submit" style="border-radius: 8px; padding: 10px 20px;">
+                        <i class="fas fa-check"></i> Confirm Reassignment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Unassign Confirmation Modal -->
+<div class="modal fade" id="unassignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 12px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Remove Driver Assignment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'driver_assignment' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="unassign">
+                <input type="hidden" name="assignment_id" id="unassign-assignment-id">
+                <div class="modal-body">
+                    <div class="text-center py-3">
+                        <i class="fas fa-user-times" style="font-size: 48px; color: #dc3545; margin-bottom: 15px;"></i>
+                        <p style="font-size: 16px; margin-bottom: 10px;">Are you sure you want to remove this driver assignment?</p>
+                        <p class="text-muted" style="font-size: 14px;">This action cannot be undone.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 20px;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-remove" style="border-radius: 8px; padding: 10px 20px;">
+                        <i class="fas fa-trash"></i> Remove Assignment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

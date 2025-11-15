@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #E31937 0%, #C41230 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 15px rgba(227, 25, 55, 0.3);
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 12px;
+        width: 100%;
+        transition: border-color 0.3s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #E31937;
+        box-shadow: 0 0 0 0.2rem rgba(227, 25, 55, 0.25);
+        outline: none;
+    }
+    
+    .btn-submit {
+        background: linear-gradient(135deg, #E31937 0%, #C41230 100%);
+        color: white;
+        border: none;
+        padding: 12px 40px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
+    
+    .btn-submit:hover {
+        transform: scale(1.05);
+        color: white;
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 40px;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+    
+    .btn-cancel:hover {
+        background: #5a6268;
+        color: white;
+    }
+    
+    .required {
+        color: #E31937;
+    }
+    
+    .help-text {
+        font-size: 0.9em;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
+    .wagon-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+        display: none;
+    }
+    
+    .wagon-info.show {
+        display: block;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+</style>
+
+<div class="page-header">
+    <h1><i class="fas fa-calendar-plus"></i> Schedule Wagon Maintenance</h1>
+    <p>Schedule a wagon for maintenance and inspection</p>
+</div>
+
+<div class="form-card">
+    <form method="POST">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label class="form-label" for="wagon">
+                Select Wagon <span class="required">*</span>
+            </label>
+            <select class="form-select" id="wagon" name="wagon" required onchange="showWagonInfo()">
+                <option value="">-- Select a wagon --</option>
+                {% for wagon in wagons %}
+                <option value="{{ wagon.id }}" 
+                        data-type="{{ wagon.get_wagon_type_display }}"
+                        data-capacity="{{ wagon.max_weight_capacity }}"
+                        data-manufacturer="{{ wagon.manufacturer }}"
+                        data-status="{{ wagon.get_status_display }}">
+                    {{ wagon.wagon_number }} - {{ wagon.get_wagon_type_display }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="help-text">Select the wagon that requires maintenance</div>
+            
+            <div class="wagon-info" id="wagonInfo">
+                <h6><i class="fas fa-info-circle"></i> Wagon Details</h6>
+                <div class="info-row">
+                    <span>Type:</span>
+                    <strong id="infoType">-</strong>
+                </div>
+                <div class="info-row">
+                    <span>Capacity:</span>
+                    <strong id="infoCapacity">-</strong>
+                </div>
+                <div class="info-row">
+                    <span>Manufacturer:</span>
+                    <strong id="infoManufacturer">-</strong>
+                </div>
+                <div class="info-row">
+                    <span>Current Status:</span>
+                    <strong id="infoStatus">-</strong>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="reason">
+                Maintenance Reason <span class="required">*</span>
+            </label>
+            <textarea class="form-control" id="reason" name="reason" rows="4" required placeholder="Describe the reason for maintenance..."></textarea>
+            <div class="help-text">Provide detailed information about why this wagon needs maintenance</div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="expected_completion_date">
+                Expected Completion Date <span class="required">*</span>
+            </label>
+            <input type="date" class="form-control" id="expected_completion_date" name="expected_completion_date" required>
+            <div class="help-text">Estimated date when the maintenance will be completed</div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="notes">
+                Additional Notes
+            </label>
+            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional information or special instructions..."></textarea>
+            <div class="help-text">Optional: Add any additional notes or special instructions</div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 30px;">
+            <button type="submit" class="btn btn-submit">
+                <i class="fas fa-save"></i> Schedule Maintenance
+            </button>
+            <a href="{% url 'wagon_dashboard' %}" class="btn btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function showWagonInfo() {
+    const select = document.getElementById('wagon');
+    const option = select.options[select.selectedIndex];
+    const infoDiv = document.getElementById('wagonInfo');
+    
+    if (option.value) {
+        document.getElementById('infoType').textContent = option.dataset.type || '-';
+        document.getElementById('infoCapacity').textContent = option.dataset.capacity ? option.dataset.capacity + ' tons' : '-';
+        document.getElementById('infoManufacturer').textContent = option.dataset.manufacturer || '-';
+        document.getElementById('infoStatus').textContent = option.dataset.status || '-';
+        infoDiv.classList.add('show');
+    } else {
+        infoDiv.classList.remove('show');
+    }
+}
+
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('expected_completion_date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
+});
+</script>
+
+{% endblock %}

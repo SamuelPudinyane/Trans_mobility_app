@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mechanical Maintenance Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .stats-card {
+        border-left: 4px solid #E31937;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .task-badge {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="fas fa-tools me-2" style="color: #E31937;"></i>Mechanical Maintenance Dashboard
+            </h2>
+            <p class="text-muted">Track and manage locomotive and cargo maintenance operations</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Locomotives</h6>
+                            <h3 class="mb-0">{{ locomotives_under_maintenance }}</h3>
+                            <small class="text-muted">Under Maintenance</small>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-train text-danger fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Pending Tasks</h6>
+                            <h3 class="mb-0">{{ pending_tasks }}</h3>
+                            <small class="text-muted">Not Started</small>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-clock text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">In Progress</h6>
+                            <h3 class="mb-0">{{ in_progress_tasks|length }}</h3>
+                            <small class="text-muted">Active Work</small>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-spinner text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm stats-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Completed Today</h6>
+                            <h3 class="mb-0">{{ completed_today }}</h3>
+                            <small class="text-muted">Tasks Done</small>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Maintenance Tasks (In Progress) -->
+    {% if in_progress_tasks %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header" style="background: linear-gradient(135deg, #E31937 0%, #b8152c 100%); color: white;">
+                    <h5 class="mb-0">
+                        <i class="fas fa-wrench"></i> Tasks In Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Type</th>
+                                    <th>Reason</th>
+                                    <th>Started</th>
+                                    <th>Expected Completion</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in in_progress_tasks %}
+                                <tr>
+                                    <td>
+                                        <strong>
+                                            {% if task.item_type == 'LOCOMOTIVE' %}
+                                                {{ task.locomotive.locomotive|default:"Unnamed" }}
+                                            {% else %}
+                                                {{ task.cargo.cargo_name|default:"Unnamed" }}
+                                            {% endif %}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if task.item_type == 'LOCOMOTIVE' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ task.item_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ task.reason|truncatewords:8 }}</td>
+                                    <td>{{ task.scheduled_date|date:"M d, Y H:i" }}</td>
+                                    <td>{{ task.expected_completion_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'mechanical_maintenance_update' task.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i> Update
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Active Maintenance Tasks -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks" style="color: #E31937;"></i> All Active Maintenance Tasks
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if active_maintenance %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Item</th>
+                                    <th>Type</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Scheduled By</th>
+                                    <th>Expected Completion</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in active_maintenance %}
+                                <tr>
+                                    <td><strong>#{{ task.id }}</strong></td>
+                                    <td>
+                                        {% if task.item_type == 'LOCOMOTIVE' %}
+                                            {{ task.locomotive.locomotive|default:"Unnamed Locomotive" }}
+                                        {% else %}
+                                            {{ task.cargo.cargo_name|default:"Unnamed Cargo" }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge task-badge {% if task.item_type == 'LOCOMOTIVE' %}bg-primary{% else %}bg-info{% endif %}">
+                                            <i class="fas {% if task.item_type == 'LOCOMOTIVE' %}fa-train{% else %}fa-box{% endif %}"></i>
+                                            {{ task.item_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ task.reason|truncatewords:6 }}</td>
+                                    <td>
+                                        {% if task.status == 'SCHEDULED' %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-clock"></i> Scheduled
+                                        </span>
+                                        {% elif task.status == 'IN_PROGRESS' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-spinner"></i> In Progress
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {% if task.scheduled_by %}
+                                                {{ task.scheduled_by.first_name }} {{ task.scheduled_by.last_name }}
+                                            {% else %}
+                                                Admin
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>{{ task.expected_completion_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'mechanical_maintenance_update' task.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-arrow-right"></i> Work On
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-check-circle fa-4x mb-3" style="color: #E31937; opacity: 0.2;"></i>
+                        <p>No active maintenance tasks</p>
+                        <small>All clear! No scheduled or in-progress maintenance.</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recently Completed Tasks -->
+    {% if completed_tasks %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-double text-success"></i> Recently Completed
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Type</th>
+                                    <th>Completed</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in completed_tasks %}
+                                <tr>
+                                    <td>
+                                        {% if task.item_type == 'LOCOMOTIVE' %}
+                                            {{ task.locomotive.locomotive|default:"Unnamed" }}
+                                        {% else %}
+                                            {{ task.cargo.cargo_name|default:"Unnamed" }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if task.item_type == 'LOCOMOTIVE' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ task.item_type }}
+                                        </span>
+                                    </td>
+                                    <td>{{ task.actual_completion_date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <small class="text-muted">{{ task.get_duration_in_maintenance }}</small>
+                                    </td>
+                                    <td>
+                                        {% if task.status == 'COMPLETED' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Completed
+                                        </span>
+                                        {% elif task.status == 'READY_FOR_ACTIVATION' %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-hourglass-half"></i> Awaiting Admin
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Dispatch Notifications -->
+    {% if notifications %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell text-danger"></i> Active Dispatch Notifications
+                        <span class="badge bg-danger">{{ unread_count }} New</span>
+                    </h5>
+                    <a href="{% url 'my_notifications' %}" class="btn btn-sm" style="background: #E31937; color: white;">
+                        <i class="fas fa-list"></i> View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Issue Description</th>
+                                    <th>Requester</th>
+                                    <th>Distance</th>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for notif in notifications %}
+                                <tr class="table-warning">
+                                    <td><strong>#{{ notif.request_id }}</strong></td>
+                                    <td>{{ notif.issue|truncatewords:10 }}</td>
+                                    <td>{{ notif.requester }}</td>
+                                    <td>
+                                        {% if notif.distance_km %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-map-marker-alt"></i> {{ notif.distance_km|floatformat:1 }} km
+                                        </span>
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ notif.created_at|timesince }} ago</td>
+                                    <td>
+                                        <a href="{% url 'dispatch_response' notif.id %}" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-eye"></i> Respond
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

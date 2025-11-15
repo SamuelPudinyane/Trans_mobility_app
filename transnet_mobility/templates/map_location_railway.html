@@ -1,192 +1,373 @@
 {% extends 'base.html' %}
 
-{% block title %}Train Tracker - South Africa{% endblock %}
+{% block title %}Railway Tracker - South Africa{% endblock %}
 {% block content %}
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css" />
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
 <style>
-  #map { width: 100%; height: 600px; }
-  /* make the map area visibly distinct if tiles fail */
-  #map { background: #f6f6f6; position: relative; }
-  #map-status { position: absolute; left: 8px; top: 8px; z-index: 2000; background: rgba(255,255,255,0.9); padding: 6px 8px; border-radius: 4px; font-size: 0.9rem; border: 1px solid #ddd; }
-  .ol-popup {
-    position: absolute;
-    background-color: white;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    min-width: 160px;
-  }
-  .ol-popup:after, .ol-popup:before { display: none; }
-</style>
-<div id="map" class="mt-4"></div>
-<div id="map-status">initializing map...</div>
-
-<script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
-<script>
-  window.addEventListener('load', () => {
-    try {
-      console.log('Initializing OpenLayers map...');
-      // helper to project coords
-      const toMap = (lon, lat) => ol.proj.fromLonLat([lon, lat]);
-
-      // South Africa bounding box in EPSG:3857
-      const saExtent = ol.proj.transformExtent([16.45, -35.27, 32.89, -22.13], 'EPSG:4326', 'EPSG:3857');
-
-      // fallback tile (SVG) used when a tile fails to load
-      const fallbackSVG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><rect width='100%' height='100%' fill='%23e9e9e9'/></svg>";
-      let tileErrorCount = 0;
-
-      // helper to create a tile source with error handling
-      function createXYZ(urlTemplate, maxZoom){
-        return new ol.source.XYZ({
-          url: urlTemplate,
-          maxZoom: maxZoom || 19,
-          crossOrigin: 'anonymous',
-          tileLoadFunction: function(img, src) {
-            img.onload = function(){ /* ok */ };
-            img.onerror = function(e){
-              tileErrorCount++;
-              console.warn('Tile failed to load', src, e);
-              try { img.src = fallbackSVG; } catch(err){ console.warn('fallback failed', err); }
-              const st = document.getElementById('map-status');
-              if (st) st.innerText = `tiles failed: ${tileErrorCount}`;
-              // after several failures, switch the basemap to OSM as a fallback
-              if (tileErrorCount === 6) {
-                try {
-                  const newUrl = 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png';
-                  const baseLayer = base; // captured from outer scope
-                  if (baseLayer && baseLayer.getSource && typeof baseLayer.getSource().setUrl === 'function') {
-                    baseLayer.getSource().setUrl(newUrl);
-                    if (st) st.innerText = 'tiles failed: switching basemap to OpenStreetMap';
-                  }
-                } catch(swapErr) { console.warn('Basemap swap failed', swapErr); }
-              }
-            };
-            try { img.src = src; } catch(err){ img.src = fallbackSVG; }
-          }
-        });
-      }
-
-      // Base (very faint) no-labels basemap
-      const base = new ol.layer.Tile({ source: createXYZ('https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png', 19), opacity: 0.18 });
-
-      // Railway-only tiles
-      const railway = new ol.layer.Tile({ source: createXYZ('https://a.tile.openrailwaymap.org/standard/{z}/{x}/{y}.png', 19), opacity: 1 });
-
-      // Vector layer for user markers
-      const vectorSource = new ol.source.Vector();
-      const vectorLayer = new ol.layer.Vector({ source: vectorSource });
-
-      const map = new ol.Map({
-        target: 'map',
-        layers: [ base, railway, vectorLayer ],
-        view: new ol.View({ center: toMap(28.0, -26.2), zoom: 6, extent: saExtent }),
-        controls: ol.control.defaults().extend([ new ol.control.ScaleLine() ])
-      });
-
-      const statusEl = document.getElementById('map-status');
-      if (statusEl) statusEl.innerText = 'map initialized — loading tiles...';
-
-      // ensure map size is updated (useful if container was hidden)
-      setTimeout(() => { try { map.updateSize(); console.log('map.updateSize() called'); } catch(e){console.warn(e);} }, 300);
-      window.addEventListener('resize', () => { try { map.updateSize(); } catch(e){} });
-
-      // Keep map constrained to SA extent
-      map.getView().on('change:center', () => {
-        const view = map.getView();
-        const center = view.getCenter();
-        if (!ol.extent.containsCoordinate(saExtent, center)) {
-          view.setCenter(ol.extent.getClosestPoint(saExtent, center));
-        }
-      });
-
-      // Create a popup overlay
-      const popup = document.createElement('div');
-      popup.className = 'ol-popup';
-      const overlay = new ol.Overlay({ element: popup, positioning: 'bottom-center', offset: [0, -12] });
-      map.addOverlay(overlay);
-
-      // manage markers by user id
-      const userFeatures = {};
-
-      function formatPopup(item) {
-        return `<b>${item.user.email}</b><br>Role: ${item.user.role}<br>Phone: ${item.user.phone || 'N/A'}<br>Last seen: ${item.timestamp}`;
-      }
-
-      function loadLocations() {
-        fetch('/api/update-location/')
-          .then(r => r.json())
-          .then(data => {
-            data.forEach(item => {
-              const id = item.user.id;
-              const coord = toMap(item.lng, item.lat);
-              if (userFeatures[id]) {
-                userFeatures[id].getGeometry().setCoordinates(coord);
-                userFeatures[id].set('popup', formatPopup(item));
-              } else {
-                const feat = new ol.Feature({ geometry: new ol.geom.Point(coord), id });
-                feat.setStyle(new ol.style.Style({ image: new ol.style.Icon({ src: '/static/images/marker-icon.png', scale: 0.8 }) }));
-                feat.set('popup', formatPopup(item));
-                vectorSource.addFeature(feat);
-                userFeatures[id] = feat;
-              }
-            });
-          }).catch(e => console.error('loadLocations', e));
-      }
-
-      // click to show popup
-      map.on('singleclick', function(evt) {
-        overlay.setPosition(undefined);
-        map.forEachFeatureAtPixel(evt.pixel, function(feature) {
-          const coord = feature.getGeometry().getCoordinates();
-          popup.innerHTML = feature.get('popup') || 'No info';
-          overlay.setPosition(coord);
-        });
-      });
-
-      // send current device location to server and show marker
-      function sendLocation() {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(pos => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          // update or create 'me' feature
-          if (userFeatures['me']) {
-            userFeatures['me'].getGeometry().setCoordinates(toMap(lng, lat));
-          } else {
-            const me = new ol.Feature({ geometry: new ol.geom.Point(toMap(lng, lat)), id: 'me' });
-            me.setStyle(new ol.style.Style({ image: new ol.style.Circle({ radius: 7, fill: new ol.style.Fill({color: '#1976d2'}), stroke: new ol.style.Stroke({color: '#fff', width: 2}) }) }));
-            me.set('popup', '📍 You are here');
-            vectorSource.addFeature(me);
-            userFeatures['me'] = me;
-          }
-          map.getView().setCenter(toMap(lng, lat));
-          map.getView().setZoom(13);
-
-          // post to server
-          fetch('/api/update-location/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ latitude: lat, longitude: lng }) }).catch(()=>{});
-        }, err => console.warn('Geolocation error', err));
-      }
-
-      // initialize
-      loadLocations();
-      sendLocation();
-      setInterval(loadLocations, 10000);
-      setInterval(sendLocation, 5000);
-
-      // report tile status periodically
-      setInterval(() => {
-        const st = document.getElementById('map-status');
-        if (st) st.innerText = tileErrorCount ? `tiles failed: ${tileErrorCount}` : 'tiles loading';
-      }, 2000);
-    } catch (err) {
-      console.error('Map init failed', err);
-      const el = document.getElementById('map');
-      if (el) el.innerText = 'Map failed to load: ' + (err.message || err);
+    .map-container {
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-  });
+    
+    .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #E31937;
+    }
+    
+    .map-header h1 {
+        color: #333;
+        margin: 0;
+        font-size: 28px;
+    }
+    
+    #map { 
+        width: 100%; 
+        height: 700px; 
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .info-box {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    
+    .info-box i {
+        color: #856404;
+        margin-right: 8px;
+    }
+    
+    .legend {
+        background: white;
+        padding: 15px;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        font-size: 13px;
+        max-width: 250px;
+    }
+    
+    .legend h4 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: #333;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .legend-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        border-radius: 3px;
+    }
+    
+    .user-popup {
+        min-width: 200px;
+    }
+    
+    .user-popup h5 {
+        margin: 0 0 10px 0;
+        color: #E31937;
+        font-size: 16px;
+    }
+    
+    .user-popup p {
+        margin: 5px 0;
+        font-size: 13px;
+    }
+    
+    /* Custom railway line styles */
+    .railway-line {
+        stroke: #444;
+        stroke-width: 2;
+        stroke-dasharray: 5, 5;
+    }
+    
+    /* Status indicator */
+    .status-indicator {
+        position: absolute;
+        top: 80px;
+        right: 20px;
+        background: white;
+        padding: 10px 15px;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        z-index: 1000;
+        font-size: 13px;
+    }
+    
+    .status-indicator.online {
+        border-left: 4px solid #28a745;
+    }
+    
+    .status-indicator.loading {
+        border-left: 4px solid #ffc107;
+    }
+</style>
+
+<div class="map-container">
+    <div class="map-header">
+        <h1><i class="fas fa-train"></i> Railway Tracker - Live Locations</h1>
+    </div>
+    
+    <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        <strong>Railway Map:</strong> Track real-time locations of drivers and locomotives on South Africa's railway network. 
+        Railway lines are shown in dark gray dashed lines. Click on markers for more information.
+    </div>
+    
+    <div id="map"></div>
+    <div id="status" class="status-indicator loading">
+        <i class="fas fa-circle-notch fa-spin"></i> Loading map...
+    </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // Initialize map - centered on South Africa
+        const map = L.map('map').setView([-28.5, 24.5], 6);
+        
+        // Update status
+        const statusEl = document.getElementById('status');
+        statusEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Loading tiles...';
+        
+        // Base map layer - OpenStreetMap
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+            opacity: 0.7
+        });
+        
+        // Railway overlay layer - OpenRailwayMap
+        const railwayLayer = L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a>',
+            maxZoom: 18,
+            opacity: 1
+        });
+        
+        // Alternative: Transport map with railways
+        const transportLayer = L.tileLayer('https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=YOUR_API_KEY', {
+            attribution: '&copy; Thunderforest',
+            maxZoom: 18,
+            opacity: 0.8
+        });
+        
+        // Add base layer
+        osmLayer.addTo(map);
+        
+        // Try to add railway layer with error handling
+        let railwayLayerAdded = false;
+        railwayLayer.on('tileerror', function(error, tile) {
+            console.warn('Railway tile failed to load, using fallback');
+            if (!railwayLayerAdded) {
+                // If railway tiles fail, just use OSM with full opacity
+                osmLayer.setOpacity(1);
+            }
+        });
+        
+        railwayLayer.on('tileload', function() {
+            if (!railwayLayerAdded) {
+                railwayLayerAdded = true;
+                statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Map ready';
+                statusEl.className = 'status-indicator online';
+            }
+        });
+        
+        railwayLayer.addTo(map);
+        
+        // After 3 seconds, if no railway tiles loaded, show ready status anyway
+        setTimeout(() => {
+            if (!railwayLayerAdded) {
+                statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Map ready';
+                statusEl.className = 'status-indicator online';
+            }
+        }, 3000);
+        
+        // Layer control
+        const baseLayers = {
+            "OpenStreetMap": osmLayer
+        };
+        
+        const overlayLayers = {
+            "Railway Lines": railwayLayer
+        };
+        
+        L.control.layers(baseLayers, overlayLayers).addTo(map);
+        
+        // Add legend
+        const legend = L.control({ position: 'bottomright' });
+        
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <h4><i class="fas fa-train"></i> Legend</h4>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #1976d2; border-radius: 50%;"></div>
+                    <span>Your Location</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #E31937; border-radius: 50%;"></div>
+                    <span>Driver Location</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon" style="background-color: #444; height: 2px; border-radius: 0;"></div>
+                    <span>Railway Lines</span>
+                </div>
+            `;
+            return div;
+        };
+        
+        legend.addTo(map);
+        
+        // Store user markers
+        const userMarkers = {};
+        let myLocationMarker = null;
+        
+        // Custom icons
+        const driverIcon = L.divIcon({
+            html: '<div style="background-color: #E31937; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+            className: 'custom-marker',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        
+        const myLocationIcon = L.divIcon({
+            html: '<div style="background-color: #1976d2; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); animation: pulse 2s infinite;"></div><style>@keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; }}</style>',
+            className: 'custom-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        
+        // Load user locations from server
+        function loadLocations() {
+            fetch('/api/update-location/')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => {
+                        const userId = item.user.id;
+                        const lat = item.lat;
+                        const lng = item.lng;
+                        
+                        // Create popup content
+                        const popupContent = `
+                            <div class="user-popup">
+                                <h5><i class="fas fa-user"></i> ${item.user.email}</h5>
+                                <p><strong>Role:</strong> ${item.user.role}</p>
+                                <p><strong>Phone:</strong> ${item.user.phone || 'N/A'}</p>
+                                <p><strong>Last Updated:</strong> ${item.timestamp}</p>
+                            </div>
+                        `;
+                        
+                        if (userMarkers[userId]) {
+                            // Update existing marker
+                            userMarkers[userId].setLatLng([lat, lng]);
+                            userMarkers[userId].setPopupContent(popupContent);
+                        } else {
+                            // Create new marker
+                            const marker = L.marker([lat, lng], { icon: driverIcon })
+                                .bindPopup(popupContent)
+                                .addTo(map);
+                            userMarkers[userId] = marker;
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading locations:', error);
+                });
+        }
+        
+        // Send current location to server
+        function sendLocation() {
+            if (!navigator.geolocation) {
+                console.warn('Geolocation not supported');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Update or create "my location" marker
+                    if (myLocationMarker) {
+                        myLocationMarker.setLatLng([lat, lng]);
+                    } else {
+                        myLocationMarker = L.marker([lat, lng], { icon: myLocationIcon })
+                            .bindPopup('<div class="user-popup"><h5>📍 Your Location</h5></div>')
+                            .addTo(map);
+                        
+                        // Center map on user location on first load
+                        map.setView([lat, lng], 12);
+                    }
+                    
+                    // Send to server
+                    fetch('/api/update-location/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            latitude: lat,
+                            longitude: lng
+                        })
+                    }).catch(error => {
+                        console.error('Error sending location:', error);
+                    });
+                },
+                function(error) {
+                    console.warn('Geolocation error:', error.message);
+                }
+            );
+        }
+        
+        // Initialize
+        loadLocations();
+        sendLocation();
+        
+        // Refresh locations every 10 seconds
+        setInterval(loadLocations, 10000);
+        
+        // Send location every 5 seconds
+        setInterval(sendLocation, 5000);
+        
+        // Add scale control
+        L.control.scale({ imperial: false, metric: true }).addTo(map);
+        
+        console.log('Railway map initialized successfully');
+        
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        document.getElementById('map').innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; color: #666;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px; color: #E31937;"></i>
+                <h3>Map Failed to Load</h3>
+                <p>${error.message || 'Unknown error'}</p>
+            </div>
+        `;
+    }
+});
 </script>
 
 {% endblock %}

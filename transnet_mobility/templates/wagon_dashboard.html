@@ -1,0 +1,682 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #E31937 0%, #C41230 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 15px rgba(227, 25, 55, 0.3);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #E31937;
+    }
+    
+    .stat-card.available {
+        border-left-color: #28a745;
+    }
+    
+    .stat-card.in-use {
+        border-left-color: #007bff;
+    }
+    
+    .stat-card.maintenance {
+        border-left-color: #ffc107;
+    }
+    
+    .stat-card.ready {
+        border-left-color: #6c757d;
+    }
+    
+    .stat-card.written-off {
+        border-left-color: #dc3545;
+    }
+    
+    .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .section-title {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .wagon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .wagon-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .wagon-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .wagon-name {
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .wagon-details {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 5px;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+    
+    .status-badge.available {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-badge.in-use {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    
+    .status-badge.maintenance {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-badge.ready {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .status-badge.written-off {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .btn-schedule {
+        background: linear-gradient(135deg, #E31937 0%, #C41230 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 5px;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
+    
+    .btn-schedule:hover {
+        transform: scale(1.05);
+        color: white;
+    }
+    
+    .maintenance-table {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .maintenance-table th {
+        background-color: #E31937;
+        color: white;
+        padding: 12px;
+        text-align: left;
+    }
+    
+    .maintenance-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+        font-style: italic;
+    }
+    
+    .capacity-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .capacity-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    
+    .filter-controls {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-controls .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 0.9em;
+    }
+    
+    .filter-controls .form-select,
+    .filter-controls .form-control {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .urgency-legend {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        margin-top: 15px;
+    }
+    
+    .legend-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 0.95em;
+    }
+    
+    .legend-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .legend-item {
+        display: inline-block;
+        padding: 8px 15px;
+        border-radius: 20px;
+        color: white;
+        font-size: 0.85em;
+        font-weight: 600;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .urgency-badge {
+        display: inline-block;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.8;
+        }
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .maintenance-table tbody tr {
+        transition: background-color 0.2s;
+    }
+    
+    .maintenance-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .badge {
+        font-size: 0.85em;
+        padding: 6px 12px;
+    }
+</style>
+
+<div class="dashboard-header">
+    <h1><i class="fas fa-trailer"></i> Wagon Management Dashboard</h1>
+    <p>Monitor and manage all wagons and their maintenance schedules</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card available">
+        <div class="stat-value">{{ available_wagons|length }}</div>
+        <div class="stat-label"><i class="fas fa-check-circle"></i> Available</div>
+    </div>
+    <div class="stat-card in-use">
+        <div class="stat-value">{{ in_use_wagons|length }}</div>
+        <div class="stat-label"><i class="fas fa-truck-loading"></i> In Use</div>
+    </div>
+    <div class="stat-card maintenance">
+        <div class="stat-value">{{ in_maintenance_wagons|length }}</div>
+        <div class="stat-label"><i class="fas fa-wrench"></i> In Maintenance</div>
+    </div>
+    <div class="stat-card ready">
+        <div class="stat-value">{{ ready_for_activation|length }}</div>
+        <div class="stat-label"><i class="fas fa-clock"></i> Ready for Activation</div>
+    </div>
+    <div class="stat-card written-off">
+        <div class="stat-value">{{ written_off_wagons|length }}</div>
+        <div class="stat-label"><i class="fas fa-ban"></i> Written Off</div>
+    </div>
+</div>
+
+<!-- Capacity Information -->
+<div class="capacity-info">
+    <h4><i class="fas fa-weight"></i> Capacity Overview</h4>
+    <div class="capacity-row">
+        <span>Total Fleet Capacity:</span>
+        <strong>{{ total_capacity|floatformat:0 }} tons</strong>
+    </div>
+    <div class="capacity-row">
+        <span>Currently In Use:</span>
+        <strong>{{ in_use_capacity|floatformat:0 }} tons</strong>
+    </div>
+    <div class="capacity-row">
+        <span>Available Capacity:</span>
+        <strong>{{ available_capacity|floatformat:0 }} tons</strong>
+    </div>
+</div>
+
+<!-- Available Wagons -->
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-check-circle" style="color: #28a745;"></i>
+        Available Wagons ({{ available_wagons|length }})
+    </div>
+    {% if available_wagons %}
+    <div class="wagon-grid">
+        {% for wagon in available_wagons %}
+        <div class="wagon-card">
+            <div class="wagon-name">{{ wagon.wagon_number }}</div>
+            <div class="wagon-details"><strong>Type:</strong> {{ wagon.get_wagon_type_display }}</div>
+            <div class="wagon-details"><strong>Capacity:</strong> {{ wagon.payload_capacity|floatformat:0 }} tons</div>
+            <div class="wagon-details"><strong>Manufacturer:</strong> {{ wagon.manufacturer }}</div>
+            <span class="status-badge available">{{ wagon.get_status_display }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox fa-3x"></i>
+        <p>No available wagons at the moment</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- In-Use Wagons -->
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-truck-loading" style="color: #007bff;"></i>
+        Wagons In Use ({{ in_use_wagons|length }})
+    </div>
+    
+    <!-- Locomotive Filter -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <form method="GET" id="locomotiveFilterForm" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <!-- Preserve other filter parameters -->
+            <input type="hidden" name="sort_by" value="{{ sort_by }}">
+            <input type="hidden" name="start_date" value="{{ start_date }}">
+            <input type="hidden" name="end_date" value="{{ end_date }}">
+            
+            <div style="flex: 1; min-width: 250px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #495057;">
+                    <i class="fas fa-train"></i> Filter by Locomotive
+                </label>
+                <select name="locomotive" class="form-select" onchange="document.getElementById('locomotiveFilterForm').submit();" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 5px;">
+                    <option value="">All Locomotives</option>
+                    {% for loco in locomotives %}
+                    <option value="{{ loco.id }}" {% if locomotive_filter == loco.id|stringformat:"s" %}selected{% endif %}>
+                        {{ loco.locomotive }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            {% if locomotive_filter %}
+            <div>
+                <label style="display: block; opacity: 0; margin-bottom: 5px;">Clear</label>
+                <a href="?sort_by={{ sort_by }}&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-secondary" style="padding: 8px 16px; text-decoration: none; display: inline-block;">
+                    <i class="fas fa-times"></i> Clear Filter
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    
+    {% if in_use_wagons %}
+    <div class="wagon-grid">
+        {% for wagon in in_use_wagons %}
+        <div class="wagon-card">
+            <div class="wagon-name">{{ wagon.wagon_number }}</div>
+            <div class="wagon-details"><strong>Type:</strong> {{ wagon.get_wagon_type_display }}</div>
+            <div class="wagon-details"><strong>Capacity:</strong> {{ wagon.payload_capacity|floatformat:0 }} tons</div>
+            
+            <!-- Show assignment info -->
+            {% if wagon.assignments %}
+                {% for assignment in wagon.assignments %}
+                <div class="wagon-details" style="background: #e3f2fd; padding: 8px; margin-top: 8px; border-radius: 5px;">
+                    <strong><i class="fas fa-train text-primary"></i> Assigned to:</strong> {{ assignment.locomotive }}
+                    {% if assignment.assigned_at %}
+                    <br><small style="color: #666;"><i class="fas fa-clock"></i> {{ assignment.assigned_at|date:"M d, Y H:i" }}</small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            <span class="status-badge in-use">{{ wagon.get_status_display }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox fa-3x"></i>
+        <p>No wagons currently in use</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- In Maintenance Wagons -->
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-wrench" style="color: #ffc107;"></i>
+        Wagons in Maintenance ({{ in_maintenance_wagons|length }})
+    </div>
+    {% if in_maintenance_wagons %}
+    <div class="wagon-grid">
+        {% for wagon in in_maintenance_wagons %}
+        <div class="wagon-card">
+            <div class="wagon-name">{{ wagon.wagon_number }}</div>
+            <div class="wagon-details"><strong>Type:</strong> {{ wagon.get_wagon_type_display }}</div>
+            <div class="wagon-details"><strong>Capacity:</strong> {{ wagon.payload_capacity|floatformat:0 }} tons</div>
+            <div class="wagon-details"><strong>Status:</strong> {{ wagon.get_maintenance_status_display }}</div>
+            <span class="status-badge maintenance">{{ wagon.get_status_display }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox fa-3x"></i>
+        <p>No wagons in maintenance</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ready for Activation -->
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-clock" style="color: #6c757d;"></i>
+        Ready for Activation ({{ ready_for_activation|length }})
+    </div>
+    {% if ready_for_activation %}
+    <div class="wagon-grid">
+        {% for wagon in ready_for_activation %}
+        <div class="wagon-card">
+            <div class="wagon-name">{{ wagon.wagon_number }}</div>
+            <div class="wagon-details"><strong>Type:</strong> {{ wagon.get_wagon_type_display }}</div>
+            <div class="wagon-details"><strong>Capacity:</strong> {{ wagon.payload_capacity|floatformat:0 }} tons</div>
+            <div class="wagon-details"><strong>Status:</strong> {{ wagon.get_maintenance_status_display }}</div>
+            <span class="status-badge ready">{{ wagon.get_status_display }}</span>
+            <div style="margin-top: 10px;">
+                <a href="{% url 'activate_wagon' wagon.id %}" class="btn btn-sm btn-success">
+                    <i class="fas fa-power-off"></i> Activate
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox fa-3x"></i>
+        <p>No wagons ready for activation</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Wagon Maintenance Schedules -->
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-calendar-alt" style="color: #E31937;"></i>
+        Active Wagon Maintenance Schedules
+        {% if critical_count > 0 %}
+        <span class="badge bg-danger ms-2">{{ critical_count }} Critical</span>
+        {% endif %}
+        {% if high_count > 0 %}
+        <span class="badge bg-warning ms-2">{{ high_count }} High Priority</span>
+        {% endif %}
+        <a href="{% url 'schedule_wagon_maintenance' %}" class="btn btn-schedule ms-auto">
+            <i class="fas fa-plus"></i> Schedule Maintenance
+        </a>
+    </div>
+    
+    <!-- Filter and Sort Controls -->
+    <div class="filter-controls">
+        <form method="GET" id="filterForm">
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <label class="form-label"><i class="fas fa-sort"></i> Sort By</label>
+                    <select name="sort_by" class="form-select" onchange="document.getElementById('filterForm').submit();">
+                        <option value="urgency" {% if sort_by == 'urgency' %}selected{% endif %}>Urgency (Critical First)</option>
+                        <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Newest First</option>
+                        <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest First</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label"><i class="fas fa-calendar"></i> Start Date</label>
+                    <input type="date" name="start_date" id="startDate" class="form-control" value="{{ start_date }}" onchange="validateDateRange();">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label"><i class="fas fa-calendar"></i> End Date</label>
+                    <input type="date" name="end_date" id="endDate" class="form-control" value="{{ end_date }}" onchange="validateDateRange();">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label" style="opacity: 0;">Reset</label>
+                    <a href="{% url 'wagon_dashboard' %}" class="btn btn-secondary w-100">
+                        <i class="fas fa-undo"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Urgency Legend -->
+        <div class="urgency-legend">
+            <div class="legend-title"><i class="fas fa-info-circle"></i> Maintenance Urgency Legend:</div>
+            <div class="legend-items">
+                <span class="legend-item" style="background: #dc3545;">
+                    <i class="fas fa-exclamation-triangle"></i> CRITICAL (12+ months)
+                </span>
+                <span class="legend-item" style="background: #fd7e14;">
+                    <i class="fas fa-exclamation"></i> HIGH (9-12 months)
+                </span>
+                <span class="legend-item" style="background: #ffc107;">
+                    <i class="fas fa-minus-circle"></i> MEDIUM (6-9 months)
+                </span>
+                <span class="legend-item" style="background: #90ee90;">
+                    <i class="fas fa-check-circle"></i> LOW (3-6 months)
+                </span>
+                <span class="legend-item" style="background: #28a745;">
+                    <i class="fas fa-check-double"></i> GOOD (0-3 months)
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    {% if maintenance_schedules %}
+    <div class="table-responsive">
+        <table class="maintenance-table table">
+            <thead>
+                <tr>
+                    <th>Urgency</th>
+                    <th>Wagon Number</th>
+                    <th>Wagon Type</th>
+                    <th>Reason</th>
+                    <th>Start Date</th>
+                    <th>Expected Completion</th>
+                    <th>Last Maintenance</th>
+                    <th>Days Since</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schedule in maintenance_schedules %}
+                <tr style="border-left: 5px solid {{ schedule.urgency_color }};">
+                    <td>
+                        <span class="urgency-badge" style="background-color: {{ schedule.urgency_color }}; color: white; padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.85em;">
+                            {{ schedule.urgency_level }}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>
+                            <i class="fas fa-trailer text-primary"></i>
+                            {{ schedule.wagon.wagon_number|default:"N/A" }}
+                        </strong>
+                    </td>
+                    <td>{{ schedule.wagon.wagon_type|default:"N/A" }}</td>
+                    <td>{{ schedule.reason|truncatewords:10 }}</td>
+                    <td>{{ schedule.scheduled_date|date:"Y-m-d H:i" }}</td>
+                    <td>{{ schedule.expected_completion_date|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if schedule.last_maintenance_date %}
+                            {{ schedule.last_maintenance_date|date:"Y-m-d" }}
+                        {% else %}
+                            <span class="text-danger"><i class="fas fa-times"></i> Never</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 600; color: {{ schedule.urgency_color }};">
+                            {{ schedule.days_since_last }} {% if schedule.days_since_last != "Never" %}days{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge {% if schedule.status == 'COMPLETED' %}available{% elif schedule.status == 'IN_PROGRESS' %}maintenance{% else %}ready{% endif %}">
+                            {{ schedule.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'wagon_maintenance_details' schedule.id %}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-times fa-3x"></i>
+        <p>No wagon maintenance schedules to display</p>
+        <small class="text-muted">Click "Schedule Maintenance" above to add wagon maintenance records</small>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Wagon Type Distribution -->
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-chart-pie" style="color: #667eea;"></i>
+        Wagon Type Distribution
+    </div>
+    {% if wagon_types %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Wagon Type</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for wtype in wagon_types %}
+            <tr>
+                <td>{{ wtype.wagon_type }}</td>
+                <td><strong>{{ wtype.count }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox fa-3x"></i>
+        <p>No wagon type data available</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function validateDateRange() {
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    
+    if (startDate.value && endDate.value) {
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+        
+        if (end < start) {
+            alert('End date cannot be before start date. Please select a valid date range.');
+            endDate.value = '';
+            return false;
+        }
+    }
+    
+    // Submit form if dates are valid
+    document.getElementById('filterForm').submit();
+}
+</script>
+
+{% endblock %}

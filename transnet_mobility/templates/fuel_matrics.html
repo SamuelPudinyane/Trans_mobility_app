@@ -25,13 +25,27 @@
                                   <input type="hidden" name="selected_spec_id" value="" />
 
                                   <div class="mb-3">
+                                    <label class="form-label">Select Locomotive *</label>
+                                    <select class="form-select" name="locomotive_id" required>
+                                      <option value="" disabled selected>Select locomotive...</option>
+                                      {% if locomotives %}
+                                        {% for loco in locomotives %}
+                                          <option value="{{ loco.id }}">{{ loco.name }}</option>
+                                        {% endfor %}
+                                      {% else %}
+                                        <option disabled>No locomotives assigned</option>
+                                      {% endif %}
+                                    </select>
+                                  </div>
+
+                                  <div class="mb-3">
                                     <label class="form-label">Select Saved Fuel Entry</label>
                                     <div class="input-group">
                                       <select class="form-select" name="fuel_select">
                                         <option value="" disabled selected>Select saved entry...</option>
                                         {% if fuels %}
                                           {% for f in fuels %}
-                                            <option value="{{ f.id }}">{{ f.fuel_type }} — {{ f.daily_fuel_consumption }}</option>
+                                            <option value="{{ f.id }}">{{ f.locomotive_name }} - {{ f.fuel_type }} — {{ f.daily_fuel_consumption }}</option>
                                           {% endfor %}
                                           <option disabled>──────────</option>
                                         {% endif %}
@@ -93,6 +107,7 @@
                     <thead>
                       <tr>
                         <th>ID</th>
+                        <th>Locomotive</th>
                         <th>Fuel Type</th>
                         <th>Daily Consumption (L)</th>
                         <th>Cost Per L</th>
@@ -104,6 +119,7 @@
                       {% for f in fuels %}
                       <tr>
                         <td>{{ f.id }}</td>
+                        <td>{{ f.locomotive_name|default:'' }}</td>
                         <td>{{ f.fuel_type|default:'' }}</td>
                         <td>{{ f.daily_fuel_consumption|default:'' }}</td>
                         <td>{{ f.fuel_cost_per_litre|default:'' }}</td>
@@ -111,7 +127,7 @@
                         <td><button type="button" class="btn btn-sm btn-outline-primary edit-fuel-btn" data-id="{{ f.id }}">Edit</button></td>
                       </tr>
                       {% empty %}
-                      <tr><td colspan="6">No saved fuel entries</td></tr>
+                      <tr><td colspan="7">No saved fuel entries</td></tr>
                       {% endfor %}
                     </tbody>
                   </table>
@@ -262,6 +278,7 @@
               if (!data) return;
               const set = (n,v) => { const el = document.querySelector('[name="'+n+'"]'); if (el) el.value = v || ''; };
               const selIdEl = document.querySelector('[name="selected_spec_id"]'); if (selIdEl) selIdEl.value = data.id || '';
+              set('locomotive_id', data.locomotive_id);
               set('daily_fuel_consumption', data.daily_fuel_consumption);
               set('fuel_cost_per_litre', data.fuel_cost_per_litre);
               set('average_load_per_trip', data.average_load_per_trip);

@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Electrical Maintenance Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="fas fa-bolt me-2"></i>Electrical Maintenance Dashboard
+            </h2>
+            <p class="text-muted">Manage electrical systems and maintenance operations</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Locomotives</h6>
+                            <h3 class="mb-0">{{ trains_in_terminal }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-train text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Under Maintenance</h6>
+                            <h3 class="mb-0">-</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-wrench text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Pending Tasks</h6>
+                            <h3 class="mb-0">-</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-tasks text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Completed Today</h6>
+                            <h3 class="mb-0">-</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'locomotive_config' %}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-train fa-2x mb-2"></i><br>
+                                Locomotive Management
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'wheelset' %}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-cog fa-2x mb-2"></i><br>
+                                Wheelset Specs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'fuel_matrics' %}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-gas-pump fa-2x mb-2"></i><br>
+                                Fuel Metrics
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'notifications' %}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-bell fa-2x mb-2"></i><br>
+                                Notifications
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Dispatch Notifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell text-danger"></i> Active Dispatch Notifications
+                        {% if unread_count > 0 %}
+                        <span class="badge bg-danger">{{ unread_count }} New</span>
+                        {% endif %}
+                    </h5>
+                    <a href="{% url 'my_notifications' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-list"></i> View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if notifications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Issue Description</th>
+                                    <th>Requester</th>
+                                    <th>Distance</th>
+                                    <th>Time</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for notif in notifications %}
+                                <tr class="table-warning">
+                                    <td><strong>#{{ notif.request_id }}</strong></td>
+                                    <td>{{ notif.issue|truncatewords:10 }}</td>
+                                    <td>{{ notif.requester }}</td>
+                                    <td>
+                                        {% if notif.distance_km %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-map-marker-alt"></i> {{ notif.distance_km|floatformat:1 }} km
+                                        </span>
+                                        {% else %}
+                                        N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ notif.created_at|timesince }} ago</td>
+                                    <td>
+                                        <a href="{% url 'dispatch_response' notif.id %}" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-eye"></i> Respond
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <p>No active dispatch notifications</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Maintenance Activities -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Electrical Maintenance Activities</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Locomotive ID</th>
+                                    <th>Issue Type</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        No maintenance records available
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

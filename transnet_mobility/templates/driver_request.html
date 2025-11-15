@@ -15,7 +15,8 @@
                     </div>
                     <div class="card-body">
                 <div class="form-container">
-                    <form>
+                    <form id="requestForm">
+                        {% csrf_token %}
                         <div class="mb-4">
                             <label for="cameraInput" class="form-label">Capture Image</label>
                             <div class="d-flex flex-column gap-2">
@@ -48,13 +49,36 @@
                             <small class="form-text text-muted">Please capture a clear image of the issue</small>
                         </div>
                         <div class="mb-4">
+                            <label for="locomotiveSelect" class="form-label">Select Locomotive</label>
+                            <select id="locomotiveSelect" class="form-select" required>
+                                <option value="">Choose locomotive...</option>
+                                {% for loco in locomotives %}
+                                <option value="{{ loco.id }}">{{ loco.locomotive }} - {{ loco.loco_type }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Select the locomotive you need assistance with</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="incidentCategory" class="form-label">Incident Category</label>
+                            <select id="incidentCategory" class="form-select" required>
+                                <option value="">Choose category...</option>
+                                <option value="CRIME">🚨 Crime Related (theft, robbery, assault, vandalism)</option>
+                                <option value="SAFETY">⚠️ Safety Issue (accident, injury, fire, hazard)</option>
+                                <option value="MECHANICAL">🔧 Mechanical (breakdown, malfunction, technical issue)</option>
+                                <option value="OTHER">📋 Other</option>
+                            </select>
+                            <small class="form-text text-muted">Select the type of incident you're reporting</small>
+                        </div>
+
+                        <div class="mb-4">
                             <label class="form-label">STATE YOUR ISSUE</label>
-                            <textarea class="form-control issue-textarea" placeholder="Describe your issue in detail..."></textarea>
+                            <textarea id="issueDescription" class="form-control issue-textarea" placeholder="Describe your issue in detail..." required></textarea>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
                             <button type="reset" class="btn btn-outline-secondary">cancel</button>
-                            <button type="submit" class="btn btn-primary">submit</button>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">submit</button>
                         </div>
                     </form>
                 </div>
@@ -76,8 +100,28 @@
             const preview = document.getElementById('previewImage');
             const imageDataInput = document.getElementById('capturedImageData');
             const imagePreviewDiv = document.getElementById('imagePreview');
+            const form = document.getElementById('requestForm');
+            const submitBtn = document.getElementById('submitBtn');
             let stream = null;
+            let userLocation = null;
         
+            // Get user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        userLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        };
+                        console.log('Location captured:', userLocation);
+                    },
+                    function(error) {
+                        console.error('Error getting location:', error);
+                        alert('Could not get your location. Please enable location services.');
+                    }
+                );
+            }
+
             // Start camera
             startBtn.addEventListener('click', async function() {
                 try {
@@ -127,6 +171,95 @@
                 retakeBtn.classList.add('d-none');
                 startBtn.classList.remove('d-none');
                 imageDataInput.value = '';
+            });
+
+            // Handle form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const issueDescription = document.getElementById('issueDescription').value.trim();
+                const locomotiveId = document.getElementById('locomotiveSelect').value;
+                const incidentCategory = document.getElementById('incidentCategory').value;
+                
+                if (!issueDescription) {
+                    alert('Please describe your issue');
+                    return;
+                }
+
+                if (!locomotiveId) {
+                    alert('Please select a locomotive');
+                    return;
+                }
+
+                if (!incidentCategory) {
+                    alert('Please select an incident category');
+                    return;
+                }
+
+                // Prepare FormData for multipart/form-data submission
+                const formData = new FormData();
+                formData.append('issue_description', issueDescription);
+                formData.append('locomotive_id', locomotiveId);
+                formData.append('incident_category', incidentCategory);
+                
+                // Add location if available
+                if (userLocation) {
+                    formData.append('latitude', userLocation.latitude);
+                    formData.append('longitude', userLocation.longitude);
+                }
+
+                // Convert base64 image to blob and append if available
+                if (imageDataInput.value) {
+                    try {
+                        const base64Data = imageDataInput.value.split(',')[1];
+                        const byteCharacters = atob(base64Data);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const blob = new Blob([byteArray], { type: 'image/jpeg' });
+                        formData.append('captured_image', blob, 'captured_image.jpg');
+                    } catch (error) {
+                        console.error('Error converting image:', error);
+                    }
+                }
+
+                // Add CSRF token
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                // Disable submit button
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+
+                try {
+                    const response = await fetch('{% url "driver_request" %}', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        let message = result.message || 'Request submitted successfully!';
+                        if (result.warning) {
+                            message += '\n\n⚠️ ' + result.warning;
+                        }
+                        alert(message);
+                        form.reset();
+                        imageDataInput.value = '';
+                        imagePreviewDiv.classList.add('d-none');
+                        canvas.classList.add('d-none');
+                    } else {
+                        alert(result.error || 'Failed to submit request');
+                    }
+                } catch (error) {
+                    console.error('Error submitting request:', error);
+                    alert('An error occurred while submitting your request');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'submit';
+                }
             });
         });
     </script>

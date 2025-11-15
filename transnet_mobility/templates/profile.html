@@ -1,26 +1,569 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}User Profile{% endblock %}
+{% block title %}User Profile - Transnet Mobility{% endblock %}
 {% block content %}
 
-<div class="mt-4 container profile-card">
-  <span>{{Account_type}}</span>
-  <div class="card"> 
-    <div class="card-header">
-      <h2>User Profile</h2>
+<style>
+  .profile-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+  }
+  
+  .profile-header {
+    background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px 12px 0 0;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(227, 25, 55, 0.3);
+  }
+  
+  .profile-picture-container {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: -75px auto 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 5px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    background: #f8f9fa;
+  }
+  
+  .profile-picture-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .profile-picture-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+    color: white;
+    font-size: 48px;
+  }
+  
+  .profile-card {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 40px 30px 30px;
+  }
+  
+  .profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+  }
+  
+  .info-item {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #E31937;
+  }
+  
+  .info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .info-label i {
+    color: #E31937;
+  }
+  
+  .info-value {
+    font-size: 16px;
+    color: #333;
+    font-weight: 500;
+  }
+  
+  .edit-button {
+    background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  
+  .edit-button:hover {
+    background: linear-gradient(135deg, #b8152c 0%, #9a1224 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(227, 25, 55, 0.3);
+  }
+  
+  .edit-form {
+    display: none;
+    margin-top: 30px;
+  }
+  
+  .edit-form.active {
+    display: block;
+  }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #E31937;
+  }
+  
+  .profile-picture-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .picture-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #E31937;
+    background: white;
+  }
+  
+  .picture-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .picture-preview-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+    color: white;
+    font-size: 36px;
+  }
+  
+  .file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+  }
+  
+  .file-input-wrapper input[type=file] {
+    position: absolute;
+    left: -9999px;
+  }
+  
+  .file-input-label {
+    background: #E31937;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    transition: background 0.3s;
+  }
+  
+  .file-input-label:hover {
+    background: #b8152c;
+  }
+  
+  .camera-button {
+    background: #17a2b8;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    transition: background 0.3s;
+  }
+  
+  .camera-button:hover {
+    background: #138496;
+  }
+  
+  .form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .btn-save {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .btn-save:hover {
+    background: #218838;
+    transform: translateY(-2px);
+  }
+  
+  .btn-cancel {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .btn-cancel:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+  }
+  
+  #video-container {
+    display: none;
+    margin-top: 15px;
+  }
+  
+  #video {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 8px;
+  }
+  
+  #capture-button {
+    margin-top: 10px;
+    background: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+</style>
+
+<div class="profile-container">
+  <div class="profile-header">
+    <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+    <p style="margin: 0; opacity: 0.9;">{{ user.get_role_display }}</p>
+  </div>
+  
+  <div class="profile-card">
+    <div class="profile-picture-container">
+      {% if user.profile_picture %}
+        <img src="{{ user.profile_picture.url }}" alt="Profile Picture">
+      {% else %}
+        <div class="profile-picture-placeholder">
+          <i class="fas fa-user"></i>
+        </div>
+      {% endif %}
     </div>
-    <div class="card-body">
+    
+    <div class="text-center">
+      <h2 style="margin: 0 0 5px 0; color: #333;">{{ user.first_name }} {{ user.last_name }}</h2>
+      <p style="color: #666; margin: 0;">{{ user.email }}</p>
+    </div>
+    
+    <!-- View Mode -->
+    <div id="view-mode">
+      <div class="profile-info-grid">
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-user"></i> First Name</div>
+          <div class="info-value">{{ user.first_name|default:"Not provided" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-user"></i> Last Name</div>
+          <div class="info-value">{{ user.last_name|default:"Not provided" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-envelope"></i> Email</div>
+          <div class="info-value">{{ user.email }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-phone"></i> Phone Number</div>
+          <div class="info-value">{{ user.phone_number|default:"Not provided" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-mobile-alt"></i> Mobile Number</div>
+          <div class="info-value">{{ user.mobile_number|default:"Not provided" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-id-card"></i> ID Number</div>
+          <div class="info-value">{{ user.id_number|default:"Not provided" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-briefcase"></i> Employee Number</div>
+          <div class="info-value">{{ user.employee_number|default:"Not provided" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-user-tie"></i> Profession</div>
+          <div class="info-value">{{ user.profession|default:"Not provided" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-users-cog"></i> Account Type</div>
+          <div class="info-value">{{ user.get_account_type_display }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-user-shield"></i> Role</div>
+          <div class="info-value">{{ user.get_role_display }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-calendar-alt"></i> Member Since</div>
+          <div class="info-value">{{ user.date_joined|date:"F d, Y" }}</div>
+        </div>
+        
+        <div class="info-item">
+          <div class="info-label"><i class="fas fa-check-circle"></i> Account Status</div>
+          <div class="info-value">
+            {% if user.is_active %}
+              <span style="color: #28a745; font-weight: 600;">Active</span>
+            {% else %}
+              <span style="color: #dc3545; font-weight: 600;">Inactive</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
       
-  <div class="field-value"><span class="field-label">First Name:</span> {{profile.first_name}}</div>
-  <div class="field-value"><span class="field-label">Surname:</span> {{profile.surname}}</div>
-  <div class="field-value"><span class="field-label">ID Number:</span> {{profile.ID_number}}</div>
-  <div class="field-value"><span class="field-label">Employee Number:</span> {{progile.employee_number}}</div>
-  <div class="field-value"><span class="field-label">Mobile Number:</span> {{profile.mobile_number}}</div>
-  <div class="field-value"><span class="field-label">Email:</span> {{profile.email}}</div>
-  <div class="field-value"><span class="field-label">Account Type:</span> {{profile.account_type}}</div>
+      <div class="text-center">
+        <button class="edit-button" onclick="toggleEditMode()">
+          <i class="fas fa-edit"></i> Edit Profile
+        </button>
+      </div>
+    </div>
+    
+    <!-- Edit Mode -->
+    <div id="edit-mode" class="edit-form">
+      <form method="POST" enctype="multipart/form-data" id="profile-form">
+        {% csrf_token %}
+        
+        <div class="profile-picture-upload">
+          <div class="picture-preview" id="preview-container">
+            {% if user.profile_picture %}
+              <img src="{{ user.profile_picture.url }}" alt="Profile Picture" id="preview-image">
+            {% else %}
+              <div class="picture-preview-placeholder" id="preview-placeholder">
+                <i class="fas fa-user"></i>
+              </div>
+            {% endif %}
+          </div>
+          
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+            <div class="file-input-wrapper">
+              <input type="file" name="profile_picture" id="profile_picture" accept="image/*" onchange="previewImage(this)">
+              <label for="profile_picture" class="file-input-label">
+                <i class="fas fa-upload"></i> Upload Photo
+              </label>
+            </div>
+            
+            <button type="button" class="camera-button" onclick="startCamera()">
+              <i class="fas fa-camera"></i> Take Photo
+            </button>
+          </div>
+          
+          <div id="video-container">
+            <video id="video" autoplay></video>
+            <br>
+            <button type="button" id="capture-button" onclick="capturePhoto()">
+              <i class="fas fa-camera"></i> Capture
+            </button>
+            <button type="button" class="btn-cancel" onclick="stopCamera()" style="padding: 10px 20px; margin-left: 10px;">
+              Cancel
+            </button>
+          </div>
+          <canvas id="canvas" style="display: none;"></canvas>
+        </div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="first_name"><i class="fas fa-user"></i> First Name</label>
+            <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="last_name"><i class="fas fa-user"></i> Last Name</label>
+            <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="phone_number"><i class="fas fa-phone"></i> Phone Number</label>
+            <input type="tel" id="phone_number" name="phone_number" value="{{ user.phone_number|default:'' }}">
+          </div>
+          
+          <div class="form-group">
+            <label for="mobile_number"><i class="fas fa-mobile-alt"></i> Mobile Number</label>
+            <input type="tel" id="mobile_number" name="mobile_number" value="{{ user.mobile_number|default:'' }}">
+          </div>
+          
+          <div class="form-group">
+            <label for="id_number"><i class="fas fa-id-card"></i> ID Number</label>
+            <input type="text" id="id_number" name="id_number" value="{{ user.id_number|default:'' }}">
+          </div>
+          
+          <div class="form-group">
+            <label for="employee_number"><i class="fas fa-briefcase"></i> Employee Number</label>
+            <input type="text" id="employee_number" name="employee_number" value="{{ user.employee_number|default:'' }}">
+          </div>
+          
+          <div class="form-group">
+            <label for="profession"><i class="fas fa-user-tie"></i> Profession</label>
+            <input type="text" id="profession" name="profession" value="{{ user.profession|default:'' }}">
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn-save">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+          <button type="button" class="btn-cancel" onclick="toggleEditMode()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </form>
     </div>
   </div>
-
 </div>
+
+<script>
+  let stream = null;
+  
+  function toggleEditMode() {
+    const viewMode = document.getElementById('view-mode');
+    const editMode = document.getElementById('edit-mode');
+    
+    if (editMode.classList.contains('active')) {
+      editMode.classList.remove('active');
+      viewMode.style.display = 'block';
+      stopCamera();
+    } else {
+      editMode.classList.add('active');
+      viewMode.style.display = 'none';
+    }
+  }
+  
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const previewContainer = document.getElementById('preview-container');
+        previewContainer.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
+      };
+      
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+  
+  async function startCamera() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      document.getElementById('video-container').style.display = 'block';
+    } catch (error) {
+      alert('Unable to access camera: ' + error.message);
+    }
+  }
+  
+  function stopCamera() {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      document.getElementById('video-container').style.display = 'none';
+    }
+  }
+  
+  function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    canvas.toBlob(function(blob) {
+      const file = new File([blob], "captured_photo.jpg", { type: "image/jpeg" });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      document.getElementById('profile_picture').files = dataTransfer.files;
+      
+      // Preview the captured image
+      const previewContainer = document.getElementById('preview-container');
+      previewContainer.innerHTML = `<img src="${canvas.toDataURL()}" alt="Captured" style="width: 100%; height: 100%; object-fit: cover;">`;
+      
+      stopCamera();
+    }, 'image/jpeg');
+  }
+</script>
 
 {% endblock %}

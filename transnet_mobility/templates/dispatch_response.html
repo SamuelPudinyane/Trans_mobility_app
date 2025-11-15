@@ -1,0 +1,649 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dispatch Response - Transnet Mobility{% endblock %}
+
+{% block content %}
+<style>
+    .response-container {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .response-header {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+    }
+    
+    .response-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 32px;
+    }
+    
+    .response-header .subtitle {
+        font-size: 16px;
+        opacity: 0.9;
+        margin: 5px 0;
+    }
+    
+    .distance-badge {
+        background: rgba(255,255,255,0.2);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+    }
+    
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+    
+    @media (max-width: 1024px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .card {
+        background: linear-gradient(135deg, #a10d00 0%, #7a0a00 100%);
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(161, 13, 0, 0.3);
+        border: none;
+    }
+    
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .card-header h2 {
+        margin: 0;
+        font-size: 20px;
+        color: white;
+    }
+    
+    .card-header i {
+        color: rgb(107, 189, 30);
+        font-size: 24px;
+    }
+    
+    .issue-alert {
+        background: #fff3cd;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 5px solid #ffc107;
+        margin-bottom: 20px;
+    }
+    
+    .issue-alert h3 {
+        margin: 0 0 10px 0;
+        color: #856404;
+        font-size: 16px;
+    }
+    
+    .issue-alert p {
+        margin: 0;
+        color: #664d03;
+    }
+    
+    .info-grid {
+        display: grid;
+        gap: 15px;
+    }
+    
+    .info-item {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        align-items: start;
+        gap: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    
+    .info-item i {
+        color: rgb(107, 189, 30);
+        font-size: 20px;
+        margin-top: 2px;
+    }
+    
+    .info-content {
+        flex: 1;
+    }
+    
+    .info-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    
+    .info-value {
+        font-size: 15px;
+        color: white;
+        font-weight: 500;
+    }
+    
+    .info-value small {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+    
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-in-progress {
+        background-color: #cfe2ff;
+        color: #084298;
+    }
+    
+    .status-resolved {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .map-container {
+        height: 500px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    #responseMap {
+        height: 100%;
+        width: 100%;
+    }
+    
+    .image-preview {
+        width: 100%;
+        max-height: 300px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: transform 0.3s;
+    }
+    
+    .image-preview:hover {
+        transform: scale(1.02);
+    }
+    
+    .action-section {
+        background: linear-gradient(135deg, #a10d00 0%, #7a0a00 100%);
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(161, 13, 0, 0.3);
+        border: none;
+    }
+    
+    .action-form {
+        display: grid;
+        gap: 20px;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .form-group select,
+    .form-group textarea {
+        padding: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+    
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: rgb(107, 189, 30);
+        background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .form-group select option {
+        background: #a10d00;
+        color: white;
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .form-group textarea::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+        text-decoration: none;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: #000;
+    }
+    
+    .btn-warning:hover {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .image-modal {
+        display: none;
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.9);
+    }
+    
+    .image-modal-content {
+        margin: auto;
+        display: block;
+        max-width: 90%;
+        max-height: 90%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    .image-modal-close {
+        position: absolute;
+        top: 20px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .leaflet-popup-content-wrapper {
+        border-radius: 8px;
+    }
+    
+    .leaflet-popup-content {
+        margin: 15px;
+        line-height: 1.5;
+    }
+</style>
+
+<div class="response-container">
+    <!-- Header -->
+    <div class="response-header">
+        <h1>
+            <i class="fas fa-ambulance"></i> 
+            Emergency Response - Request #{{ response.request_id }}
+        </h1>
+        <div class="subtitle">
+            <i class="fas fa-clock"></i> Dispatched: {{ response.dispatched_at|date:"F d, Y H:i" }}
+        </div>
+        <div class="subtitle">
+            <i class="fas fa-user-tie"></i> Dispatched by: {{ response.dispatched_by }}
+        </div>
+        {% if response.distance_km %}
+        <div class="distance-badge">
+            <i class="fas fa-route"></i>
+            Distance: {{ response.distance_km|floatformat:2 }} km from your location
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Map Section -->
+    <div class="map-container">
+        <div id="responseMap"></div>
+    </div>
+    
+    <!-- Content Grid -->
+    <div class="content-grid">
+        <!-- Left Column: Emergency Details -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h2>Emergency Details</h2>
+            </div>
+            
+            <div class="issue-alert">
+                <h3><i class="fas fa-info-circle"></i> Reported Issue</h3>
+                <p>{{ response.issue_description }}</p>
+            </div>
+            
+            {% if response.captured_image %}
+            <div style="margin-bottom: 20px;">
+                <img src="{{ response.captured_image }}" 
+                     alt="Emergency Image" 
+                     class="image-preview"
+                     onclick="showImageModal('{{ response.captured_image }}')">
+            </div>
+            {% endif %}
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <i class="fas fa-user"></i>
+                    <div class="info-content">
+                        <div class="info-label">Requester</div>
+                        <div class="info-value">{{ response.requester_name }}</div>
+                        <small style="color: #666;">{{ response.requester_email }}</small>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <i class="fas fa-phone"></i>
+                    <div class="info-content">
+                        <div class="info-label">Contact Phone</div>
+                        <div class="info-value">{{ response.requester_phone }}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <i class="fas fa-id-badge"></i>
+                    <div class="info-content">
+                        <div class="info-label">Role</div>
+                        <div class="info-value">{{ response.requester_role }}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div class="info-content">
+                        <div class="info-label">Location</div>
+                        <div class="info-value">
+                            {{ response.latitude|floatformat:6 }}, {{ response.longitude|floatformat:6 }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <i class="fas fa-flag"></i>
+                    <div class="info-content">
+                        <div class="info-label">Current Status</div>
+                        <div class="info-value">
+                            <span class="status-badge status-{{ response.status_class }}">
+                                {{ response.status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div class="info-content">
+                        <div class="info-label">Submitted</div>
+                        <div class="info-value">{{ response.created_at|date:"F d, Y H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column: Dispatch Information -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-clipboard-list"></i>
+                <h2>Dispatch Information</h2>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <i class="fas fa-users"></i>
+                    <div class="info-content">
+                        <div class="info-label">Response Team</div>
+                        <div class="info-value">{{ response.response_team }}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item">
+                    <i class="fas fa-user-shield"></i>
+                    <div class="info-content">
+                        <div class="info-label">Assigned Personnel</div>
+                        <div class="info-value">{{ response.assigned_personnel }}</div>
+                    </div>
+                </div>
+                
+                {% if response.estimated_arrival %}
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <div class="info-content">
+                        <div class="info-label">Estimated Arrival</div>
+                        <div class="info-value">{{ response.estimated_arrival|date:"F d, Y H:i" }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if response.response_notes %}
+                <div class="info-item" style="grid-column: 1 / -1;">
+                    <i class="fas fa-comment-alt"></i>
+                    <div class="info-content">
+                        <div class="info-label">Response Notes</div>
+                        <div class="info-value">{{ response.response_notes }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Section -->
+    <div class="action-section">
+        <div class="card-header">
+            <i class="fas fa-tasks"></i>
+            <h2>Update Response Status</h2>
+        </div>
+        
+        <form method="POST" class="action-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="status_update">
+                    <i class="fas fa-exchange-alt"></i> Update Status
+                </label>
+                <select name="status_update" id="status_update" required>
+                    <option value="">-- Select Status --</option>
+                    <option value="IN_PROGRESS" {% if response.status == 'IN_PROGRESS' %}selected{% endif %}>
+                        In Progress - Responding to Emergency
+                    </option>
+                    <option value="RESOLVED" {% if response.status == 'RESOLVED' %}selected{% endif %}>
+                        Resolved - Emergency Handled
+                    </option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="response_comment">
+                    <i class="fas fa-comment"></i> Response Comment (Optional)
+                </label>
+                <textarea name="response_comment" 
+                          id="response_comment" 
+                          placeholder="Add any notes about your response to this emergency..."></textarea>
+            </div>
+            
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check-circle"></i> Update Status
+                </button>
+                
+                <a href="tel:{{ response.requester_phone }}" class="btn btn-primary">
+                    <i class="fas fa-phone"></i> Call Requester
+                </a>
+                
+                <a href="{% url 'my_notifications' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Notifications
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal" onclick="closeImageModal()">
+    <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+    <img class="image-modal-content" id="modalImage">
+</div>
+
+<!-- Leaflet CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // Initialize map
+    const emergencyLat = {{ response.latitude }};
+    const emergencyLng = {{ response.longitude }};
+    
+    const map = L.map('responseMap').setView([emergencyLat, emergencyLng], 15);
+    
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Emergency location marker (red)
+    const emergencyIcon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background-color: #dc3545; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><i class="fas fa-exclamation-triangle" style="color: white; font-size: 14px;"></i></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+    
+    const emergencyMarker = L.marker([emergencyLat, emergencyLng], { icon: emergencyIcon }).addTo(map);
+    
+    emergencyMarker.bindPopup(`
+        <div style="min-width: 200px;">
+            <h4 style="margin: 0 0 10px 0; color: #dc3545;">
+                <i class="fas fa-exclamation-triangle"></i> Emergency Location
+            </h4>
+            <p style="margin: 5px 0;"><strong>Requester:</strong> {{ response.requester_name }}</p>
+            <p style="margin: 5px 0;"><strong>Issue:</strong> {{ response.issue_description|truncatechars:50 }}</p>
+            <p style="margin: 5px 0;"><strong>Coordinates:</strong><br>${emergencyLat.toFixed(6)}, ${emergencyLng.toFixed(6)}</p>
+            <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #28a745;">{{ response.status_display }}</span></p>
+        </div>
+    `).openPopup();
+    
+    // Image modal functions
+    function showImageModal(imageSrc) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        modal.style.display = 'block';
+        modalImg.src = imageSrc;
+    }
+    
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeImageModal();
+        }
+    });
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const status = document.getElementById('status_update').value;
+        if (!status) {
+            e.preventDefault();
+            alert('Please select a status update');
+            return false;
+        }
+        
+        const confirmed = confirm(`Are you sure you want to update the status to "${status.replace('_', ' ')}"?`);
+        if (!confirmed) {
+            e.preventDefault();
+        }
+    });
+</script>
+
+{% endblock %}

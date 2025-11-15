@@ -1,0 +1,437 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Emergency Alerts - Transnet Mobility{% endblock %}
+
+{% block content %}
+<style>
+    .emergency-alerts-container {
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .alerts-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #E31937;
+    }
+    
+    .alerts-header h1 {
+        color: #333;
+        margin: 0;
+        font-size: 28px;
+    }
+    
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-in-progress {
+        background-color: #cfe2ff;
+        color: #084298;
+    }
+    
+    .status-resolved {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .status-cancelled {
+        background-color: #f8d7da;
+        color: #842029;
+    }
+    
+    .priority-normal {
+        border-left: 5px solid #ff8c00;
+    }
+    
+    .priority-critical {
+        border-left: 5px solid #dc3545;
+        background-color: #fff5f5;
+    }
+    
+    .priority-info {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: rgba(225, 25, 55, 0.1);
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #333;
+    }
+    
+    .priority-info i {
+        color: #E31937;
+        cursor: help;
+    }
+    
+    .priority-legend {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+    }
+    
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+    }
+    
+    .requests-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    
+    .requests-table thead {
+        background-color: #E31937;
+        color: white;
+    }
+    
+    .requests-table th {
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    .requests-table td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        font-size: 13px;
+    }
+    
+    .requests-table tbody tr {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .requests-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .image-thumbnail {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .no-image {
+        width: 60px;
+        height: 60px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+        font-size: 10px;
+    }
+    
+    .location-icon {
+        color: #E31937;
+        margin-right: 5px;
+    }
+    
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #E31937 0%, #a10d00 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 700;
+    }
+    
+    .stat-card p {
+        margin: 5px 0 0 0;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .image-modal {
+        display: none;
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.9);
+    }
+    
+    .image-modal-content {
+        margin: auto;
+        display: block;
+        max-width: 90%;
+        max-height: 90%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    .image-modal-close {
+        position: absolute;
+        top: 20px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .btn-dispatch {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s;
+    }
+    
+    .btn-dispatch:hover {
+        background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+</style>
+
+<div class="emergency-alerts-container">
+    <div class="alerts-header">
+        <h1><i class="fas fa-exclamation-triangle"></i> Emergency Alerts</h1>
+        <div class="priority-info">
+            <i class="fas fa-info-circle" 
+               data-bs-toggle="tooltip" 
+               data-bs-placement="left"
+               data-bs-html="true"
+               title="<div style='text-align: left;'><strong>Priority Color Coding:</strong><br>🟠 <strong>Orange</strong> = Normal priority request<br>🔴 <strong>Red</strong> = Critical (duplicate request same day for same locomotive, needs immediate attention)</div>"></i>
+            <div class="priority-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ff8c00;"></div>
+                    <span>Normal</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #dc3545;"></div>
+                    <span>Critical</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="stats-cards">
+        <div class="stat-card">
+            <h3>{{ total_count }}</h3>
+            <p>Total Requests</p>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);">
+            <h3>{{ pending_count }}</h3>
+            <p>Pending</p>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+            <h3>{{ in_progress_count }}</h3>
+            <p>In Progress</p>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%);">
+            <h3>{{ resolved_count }}</h3>
+            <p>Resolved</p>
+        </div>
+    </div>
+    
+    <!-- Requests Table -->
+    {% if requests %}
+    <div class="table-responsive">
+        <table class="requests-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Phone</th>
+                    <th>Category</th>
+                    <th>Locomotive</th>
+                    <th>Issue Description</th>
+                    <th>Image</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in requests %}
+                <tr class="{{ request.priority_class }}" onclick="viewOnMap({{ request.latitude }}, {{ request.longitude }}, '{{ request.user_name }}', '{{ request.issue_description|escapejs }}')">
+                    <td><strong>#{{ request.id }}</strong></td>
+                    <td>
+                        <div>{{ request.user_name }}</div>
+                        <small style="color: #666;">{{ request.user_email }}</small>
+                    </td>
+                    <td>{{ request.user_role }}</td>
+                    <td>{{ request.user_phone }}</td>
+                    <td>
+                        {% if request.incident_category == 'CRIME' %}
+                        <span class="status-badge" style="background-color: #dc3545; color: white;">
+                            <i class="fas fa-exclamation-triangle"></i> Crime
+                        </span>
+                        {% elif request.incident_category == 'SAFETY' %}
+                        <span class="status-badge" style="background-color: #ffc107; color: #333;">
+                            <i class="fas fa-shield-alt"></i> Safety
+                        </span>
+                        {% elif request.incident_category == 'MECHANICAL' %}
+                        <span class="status-badge" style="background-color: #17a2b8; color: white;">
+                            <i class="fas fa-wrench"></i> Mechanical
+                        </span>
+                        {% else %}
+                        <span class="status-badge" style="background-color: #6c757d; color: white;">
+                            <i class="fas fa-info-circle"></i> Other
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div><strong>{{ request.locomotive }}</strong></div>
+                        <small style="color: #666;">{{ request.locomotive_type }}</small>
+                    </td>
+                    <td>
+                        <div style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" 
+                             title="{{ request.issue_description }}">
+                            {{ request.issue_description }}
+                        </div>
+                    </td>
+                    <td onclick="event.stopPropagation();">
+                        {% if request.captured_image %}
+                        <img src="{{ request.captured_image }}" 
+                             alt="Request Image" 
+                             class="image-thumbnail"
+                             onclick="showImageModal('{{ request.captured_image }}')">
+                        {% else %}
+                        <div class="no-image">No Image</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if request.latitude and request.longitude %}
+                        <i class="fas fa-map-marker-alt location-icon"></i>
+                        <small>{{ request.latitude|floatformat:4 }}, {{ request.longitude|floatformat:4 }}</small>
+                        {% else %}
+                        <span style="color: #999;">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ request.status_class }}">
+                            {{ request.status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <div>{{ request.created_at|date:"Y-m-d" }}</div>
+                        <small style="color: #666;">{{ request.created_at|date:"H:i:s" }}</small>
+                    </td>
+                    <td onclick="event.stopPropagation();">
+                        {% if Account_type == 'ADMIN' %}
+                        <a href="{% url 'dispatch_assistance' request.id %}" class="btn-dispatch">
+                            <i class="fas fa-ambulance"></i> Dispatch
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 60px 20px; color: #666;">
+        <i class="fas fa-inbox" style="font-size: 64px; margin-bottom: 20px; opacity: 0.3;"></i>
+        <h3>No emergency requests yet</h3>
+        <p>Emergency requests from drivers will appear here</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal" onclick="closeImageModal()">
+    <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+    <img class="image-modal-content" id="modalImage">
+</div>
+
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                html: true
+            });
+        });
+    });
+    
+    function viewOnMap(lat, lng, userName, issueDesc) {
+        if (!lat || !lng) {
+            alert('No location data available for this request');
+            return;
+        }
+        
+        // Redirect to map with parameters
+        const mapUrl = `/map_location/?lat=${lat}&lng=${lng}&user=${encodeURIComponent(userName)}&issue=${encodeURIComponent(issueDesc)}`;
+        window.location.href = mapUrl;
+    }
+    
+    function showImageModal(imageSrc) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        modal.style.display = 'block';
+        modalImg.src = imageSrc;
+    }
+    
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeImageModal();
+        }
+    });
+</script>
+
+{% endblock %}

@@ -4,6 +4,32 @@
 {% block content %}
 <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
+    
+    /* Table container styling */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Sticky header for table */
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    /* Ensure table fits within viewport */
+    .container-fluid {
+        max-width: 100%;
+        padding-right: 15px;
+        padding-left: 15px;
+    }
+    
+    /* Button group styling */
+    .btn-group .btn {
+        margin: 0 2px;
+    }
+    
     /* Keep the builder visually consistent with the main card/form
        Remove large external margins and let it use the same horizontal
        spacing as the rest of the page. */
@@ -16,10 +42,10 @@
     input, select, button, textarea { margin: 5px 0; }
   </style>
         <!-- Main Content -->
-        <div class=" p-4">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="mb-4 text-center">Locomotive Specifications</h5>
+        <div class="container-fluid px-3">
+          <div class="card mt-4">
+            <div class="card-header" style="background: linear-gradient(135deg, #E31937 0%, #8B0000 100%);">
+              <h3 class="text-white mb-0">🚂 LOCOMOTIVE SPECIFICATIONS</h3>
             </div>
             <div class="card-body">
                 <!-- Flash Messages -->
@@ -60,6 +86,48 @@
                 </div>
 
                 <script>
+                  // Additional Specs Functions - Define early so they're available everywhere
+                  let additionalSpecCount = 0;
+                  
+                  function addAdditionalSpecField(label = '', value = '') {
+                    const container = document.getElementById('additionalSpecsContainer');
+                    const fieldGroup = document.createElement('div');
+                    fieldGroup.className = 'row mb-3 additional-spec-field';
+                    fieldGroup.id = `additional-spec-${additionalSpecCount}`;
+                    
+                    fieldGroup.innerHTML = `
+                      <div class="col-md-5">
+                        <input type="text" class="form-control" name="additional_label[]" placeholder="Field Label (e.g., 'Max Speed')" value="${label}">
+                      </div>
+                      <div class="col-md-5">
+                        <input type="text" class="form-control" name="additional_value[]" placeholder="Field Value (e.g., '120 km/h')" value="${value}">
+                      </div>
+                      <div class="col-md-2">
+                        <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeAdditionalSpecField(${additionalSpecCount})">
+                          <i class="fas fa-trash"></i> Remove
+                        </button>
+                      </div>
+                    `;
+                    
+                    container.appendChild(fieldGroup);
+                    additionalSpecCount++;
+                  }
+                  
+                  function removeAdditionalSpecField(id) {
+                    const field = document.getElementById(`additional-spec-${id}`);
+                    if (field) {
+                      field.remove();
+                    }
+                  }
+                  
+                  function loadAdditionalSpecs(specs) {
+                    if (specs && Array.isArray(specs)) {
+                      specs.forEach(spec => {
+                        addAdditionalSpecField(spec.label || '', spec.value || '');
+                      });
+                    }
+                  }
+                  
                   // when select changes or the Select button is clicked, fetch spec and populate form
                   (function(){
                     const sel = document.querySelector('select[name="locomotive_select"]');
@@ -70,6 +138,12 @@
 
                     function fetchSpecById(id){
                         if (!id) return;
+                        
+                        // Clear existing survey questions first
+                        if (typeof surveyPreview !== 'undefined' && surveyPreview) surveyPreview.innerHTML = '';
+                        if (typeof dynamicFields !== 'undefined' && dynamicFields) dynamicFields.innerHTML = '';
+                        if (typeof questionIndex !== 'undefined') questionIndex = 0;
+                        
                         fetch(endpoint + '?id=' + encodeURIComponent(id))
                         .then(r => { if (r.status === 204) return null; return r.json(); })
                         .then(data => {
@@ -87,6 +161,27 @@
                           set('distributed_power', data.distributed_power);
                           set('tractive_effort', data.tractive_effort);
                           set('truck_circuit_spec', data.truck_circuit_spec);
+                          
+                          // Clear and load additional specs
+                          const additionalContainer = document.getElementById('additionalSpecsContainer');
+                          if (additionalContainer) {
+                            additionalContainer.innerHTML = '';
+                            additionalSpecCount = 0;
+                            if (data.additional_specs && Array.isArray(data.additional_specs)) {
+                              data.additional_specs.forEach(spec => {
+                                addAdditionalSpecField(spec.label || '', spec.value || '');
+                              });
+                            }
+                            // Add one empty field if none exist
+                            if (additionalSpecCount === 0) {
+                              addAdditionalSpecField();
+                            }
+                          }
+                          
+                          // Load survey questions from survey_raw
+                          if (data.survey_raw) {
+                            loadSurveyQuestions(data.survey_raw);
+                          }
                         }).catch(err => console.warn('spec fetch', err));
                     }
                     sel.addEventListener('change', () => fetchSpecById(sel.value));
@@ -102,7 +197,7 @@
               </div>
 
               <!-- Form Section -->
-              <div class="form-box">
+              <div class="form-box mt-5 ">
                 <form id="locomotiveForm" method="post" action="">
                   {% csrf_token %}
                   <input type="hidden" name="selected_spec_id" value="" />
@@ -113,7 +208,7 @@
                       type="text"
                       name="locomotive"
                       class="form-control"
-                      placeholder="name"
+                      placeholder="Enter locomotive name or identifier (e.g., Class 15E, Series 19E)"
                     />
                   </div>
                   <div class="form-group-row">
@@ -122,7 +217,7 @@
                       type="text"
                       name="loc_type"
                       class="form-control"
-                      placeholder="type"
+                      placeholder="Enter locomotive type (e.g., Electric, Diesel-Electric, Diesel)"
                     />
                   </div>
                   <div class="form-group-row">
@@ -131,7 +226,7 @@
                       type="text"
                       name="loc_class"
                       class="form-control"
-                      placeholder="class"
+                      placeholder="Enter locomotive class (e.g., Class 10E, Class 34, Class 43)"
                     />
                   </div>
                   <div class="form-group-row">
@@ -140,7 +235,7 @@
                       type="text"
                       name="engine_supply"
                       class="form-control"
-                      placeholder="engine supply"
+                      placeholder="Enter engine supply details (e.g., 3000V DC, MTU 16V 4000, EMD 710)"
                     />
                   </div>
                   <div class="form-group-row">
@@ -149,7 +244,7 @@
                       type="text"
                       name="length"
                       class="form-control"
-                      placeholder="length"
+                      placeholder="Enter length in meters (e.g., 18.5m, 21.3m)"
                     />
                   </div>
                   <div class="form-group-row">
@@ -158,7 +253,7 @@
                       type="text"
                       name="capacity_in_tons"
                       class="form-control"
-                      placeholder="capacity in tons"
+                      placeholder="Enter hauling capacity in tons (e.g., 1000t, 5000t)"
                     />
                   </div>
                   <div class="form-group-row">
@@ -167,27 +262,38 @@
                       type="text"
                       name="distributed_power"
                       class="form-control"
-                      placeholder="distributed power"
+                      placeholder="Enter distributed power capability (e.g., Yes, No, DP Equipped)"
                     />
                   </div>
                   <div class="form-group-row">
-                    <label>Tractive Efford</label>
+                    <label>Tractive Effort</label>
                     <input
                       type="text"
                       name="tractive_effort"
                       class="form-control"
-                      placeholder="tractive efford"
+                      placeholder="Enter tractive effort in kN (e.g., 300kN, 450kN, 600kN)"
                     />
                   </div>
                   <div class="form-group-row">
-                    <label>Truck Circuit Spec</label>
+                    <label>Track Circuit Spec</label>
                     <input
                       type="text"
                       name="truck_circuit_spec"
                       class="form-control"
-                      placeholder="track circuit spec"
+                      placeholder="Enter track circuit specifications (e.g., SADC Standard, TI21)"
                     />
                   </div>
+                  
+                  <!-- Additional Specifications Section -->
+                  <div class="mt-4 mb-3">
+                    <h5 class="mb-3">Additional Specifications</h5>
+                    <p class="text-muted small">Add custom field-value pairs for additional specifications</p>
+                    <div id="additionalSpecsContainer"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addAdditionalSpecField()">
+                      <i class="fas fa-plus"></i> Add Field
+                    </button>
+                  </div>
+                  
                   <div id="dynamicSurveyFields"></div>
                   <!-- Survey preview (questions will be appended here) -->
                   <div id="surveyPreviewInForm" class="mb-3"></div>
@@ -202,7 +308,8 @@
 
               <!-- Question Builder moved inside the same card so it shares width -->
               <div class="builder mt-4">
-                <h2 class="card-title">Add Section</h2>
+                <h2 class="card-title">📋 Add Additional Specifications</h2>
+                <p class="text-muted">Use this section to add any additional specifications not covered in the form above.</p>
                 <div class="mb-3">
                   <label class="form-label">Question Text:</label>
                   <input class="form-control" type="text" id="questionText">
@@ -238,6 +345,179 @@
   const surveyPreview = document.getElementById("surveyPreviewInForm");
   const dynamicFields = document.getElementById("dynamicSurveyFields");
 
+    // Function to parse survey_raw and recreate questions for editing
+    function loadSurveyQuestions(surveyRaw) {
+      if (!surveyRaw || surveyRaw.trim() === '') return;
+      
+      // Clear existing questions
+      surveyPreview.innerHTML = '';
+      dynamicFields.innerHTML = '';
+      questionIndex = 0;
+      
+      // Parse survey_raw format: question,type,answer,question2,type2,answer2,...
+      // Split by comma but need to be careful with commas in answers/options
+      // Based on the backend code: each block is "question_text,type,answers_joined"
+      // and blocks are joined with comma, so we need a smarter parser
+      
+      // The format stores: [qtext, qtype, answers, qtext2, qtype2, answers2, ...]
+      // We need to parse in groups of 3
+      const parts = surveyRaw.split(',');
+      
+      // Group every 3 parts: [text, type, answers]
+      for (let i = 0; i < parts.length; i += 3) {
+        if (i + 1 >= parts.length) break; // Need at least text and type
+        
+        const qtext = parts[i] || '';
+        const qtype = parts[i + 1] || 'text';
+        const answersStr = parts[i + 2] || '';
+        
+        if (!qtext.trim()) continue;
+        
+        // Parse options from the answers string (for radio/checkbox/dropdown)
+        let options = [];
+        if (answersStr && (qtype === 'radio' || qtype === 'checkbox' || qtype === 'dropdown')) {
+          // Options might be comma-separated in the answer
+          options = answersStr.split(',').map(o => o.trim()).filter(o => o);
+          // If no options parsed, we can't recreate properly, skip
+          if (options.length === 0) options = ['Option 1', 'Option 2'];
+        }
+        
+        // Recreate the question using addQuestion logic
+        recreateQuestion(qtext, qtype, options, answersStr);
+      }
+    }
+    
+    // Helper function to recreate a question (similar to addQuestion but with pre-filled values)
+    function recreateQuestion(text, type, options, answer) {
+      const idx = questionIndex++;
+
+      // Add compact preview in the Survey area
+      const previewWrapper = document.createElement("div");
+      previewWrapper.classList.add("question");
+      previewWrapper.className = 'd-flex align-items-center justify-content-between mb-2 p-2 border rounded';
+      previewWrapper.id = `preview-${idx}`;
+      
+      const leftSection = document.createElement('div');
+      leftSection.className = 'd-flex align-items-center';
+      
+      const previewLabel = document.createElement("strong");
+      previewLabel.textContent = text;
+      leftSection.appendChild(previewLabel);
+      
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'badge bg-secondary ms-2';
+      const typeMap = {
+        text: 'Short Text',
+        textarea: 'Long Text',
+        radio: 'Multiple Choice (Single)',
+        checkbox: 'Multiple Choice (Multiple)',
+        dropdown: 'Dropdown'
+      };
+      typeBadge.textContent = typeMap[type] || type;
+      leftSection.appendChild(typeBadge);
+      
+      // Add remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn btn-sm btn-danger';
+      removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+      removeBtn.addEventListener('click', () => {
+        const metaEl = document.getElementById(`meta-${idx}`);
+        const answerEl = document.getElementById(`answer-${idx}`);
+        const previewEl = document.getElementById(`preview-${idx}`);
+        if (metaEl) metaEl.remove();
+        if (answerEl) answerEl.remove();
+        if (previewEl) previewEl.remove();
+      });
+      
+      previewWrapper.appendChild(leftSection);
+      previewWrapper.appendChild(removeBtn);
+      surveyPreview.appendChild(previewWrapper);
+
+      // Add metadata hidden input
+      const meta = document.createElement('input');
+      meta.type = 'hidden';
+      meta.name = 'survey_questions[]';
+      meta.id = `meta-${idx}`;
+      meta.value = JSON.stringify({ text: text, type: type, options: options });
+      dynamicFields.appendChild(meta);
+
+      // Add visible answer input with pre-filled value
+      const answerWrapper = document.createElement('div');
+      answerWrapper.classList.add('form-group-row');
+      answerWrapper.id = `answer-${idx}`;
+      const answerLabel = document.createElement('label');
+      answerLabel.textContent = text;
+      answerWrapper.appendChild(answerLabel);
+
+      if (type === 'text') {
+        const a = document.createElement('input');
+        a.type = 'text';
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        a.value = answer || '';
+        answerWrapper.appendChild(a);
+      } else if (type === 'textarea') {
+        const a = document.createElement('textarea');
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        a.value = answer || '';
+        answerWrapper.appendChild(a);
+      } else if (type === 'radio') {
+        const optsDiv = document.createElement('div');
+        const answerValues = answer ? answer.split(',').map(v => v.trim()) : [];
+        options.forEach(opt => {
+          const r = document.createElement('input');
+          r.type = 'radio';
+          r.name = `survey_answers[${idx}]`;
+          r.value = opt;
+          r.className = 'me-1';
+          if (answerValues.includes(opt)) r.checked = true;
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(r);
+          lbl.appendChild(document.createTextNode(opt));
+          optsDiv.appendChild(lbl);
+        });
+        answerWrapper.appendChild(optsDiv);
+      } else if (type === 'dropdown') {
+        const sel = document.createElement('select');
+        sel.name = `survey_answers[${idx}]`;
+        sel.className = 'form-select';
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '-- Select --';
+        sel.appendChild(defaultOpt);
+        options.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          if (answer === opt) o.selected = true;
+          sel.appendChild(o);
+        });
+        answerWrapper.appendChild(sel);
+      } else if (type === 'checkbox') {
+        const boxContainer = document.createElement('div');
+        const answerValues = answer ? answer.split(',').map(v => v.trim()) : [];
+        options.forEach(opt => {
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.name = `survey_answers[${idx}][]`;
+          cb.value = opt;
+          cb.className = 'me-1';
+          if (answerValues.includes(opt)) cb.checked = true;
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(opt));
+          boxContainer.appendChild(lbl);
+        });
+        answerWrapper.appendChild(boxContainer);
+      }
+
+      dynamicFields.appendChild(answerWrapper);
+    }
+
     function addQuestion() {
       const text = document.getElementById("questionText").value.trim();
       const type = document.getElementById("questionType").value;
@@ -250,13 +530,18 @@
 
       const idx = questionIndex++;
 
-      // Add compact preview in the Survey area (no form controls to avoid duplicates)
+      // Add compact preview in the Survey area
       const previewWrapper = document.createElement("div");
-      previewWrapper.classList.add("question");
+      previewWrapper.className = 'd-flex align-items-center justify-content-between mb-2 p-2 border rounded';
       previewWrapper.id = `preview-${idx}`;
+      
+      const leftSection = document.createElement('div');
+      leftSection.className = 'd-flex align-items-center';
+      
       const previewLabel = document.createElement("strong");
       previewLabel.textContent = text;
-      previewWrapper.appendChild(previewLabel);
+      leftSection.appendChild(previewLabel);
+      
       const typeBadge = document.createElement('span');
       typeBadge.className = 'badge bg-secondary ms-2';
       const typeMap = {
@@ -267,12 +552,13 @@
         dropdown: 'Dropdown'
       };
       typeBadge.textContent = typeMap[type] || type;
-      previewWrapper.appendChild(typeBadge);
+      leftSection.appendChild(typeBadge);
+      
       // remove button
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
-      removeBtn.className = 'btn btn-sm btn-outline-danger ms-2';
-      removeBtn.textContent = 'Remove';
+      removeBtn.className = 'btn btn-sm btn-danger';
+      removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
       removeBtn.addEventListener('click', () => {
         const metaEl = document.getElementById(`meta-${idx}`);
         const answerEl = document.getElementById(`answer-${idx}`);
@@ -281,6 +567,8 @@
         if (answerEl) answerEl.remove();
         if (previewEl) previewEl.remove();
       });
+      
+      previewWrapper.appendChild(leftSection);
       previewWrapper.appendChild(removeBtn);
       surveyPreview.appendChild(previewWrapper);
 
@@ -365,7 +653,85 @@
       document.getElementById("questionText").value = "";
       document.getElementById("options").value = "";
     }
+    
+    // Load existing additional specs when editing (DOMContentLoaded handler)
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add one empty additional spec field by default for new entries
+      addAdditionalSpecField();
+    });
   </script>
+
+  <!-- All Locomotives List Section -->
+  <div class=" main-content card shadow-sm  ml-5 mt-5 mb-5">
+    <div class="card-header" style="background: linear-gradient(135deg, #E31937 0%, #8B0000 100%);">
+      <h4 class="text-white mb-0"><i class="fas fa-list"></i> All Locomotives</h4>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 600px; overflow-y: auto; overflow-x: auto;">
+        <table class="table table-striped table-hover mb-0 table-sm">
+          <thead class="sticky-top bg-light">
+            <tr>
+              <th style="min-width: 100px;">Name</th>
+              <th style="min-width: 80px;">Type</th>
+              <th style="min-width: 70px;">Class</th>
+              <th style="min-width: 70px;">Capacity</th>
+              <th style="min-width: 80px;">Tractive</th>
+              <th style="min-width: 80px;">Status</th>
+              <th style="min-width: 120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for loco in all_locomotives %}
+            <tr class="{% if loco.status == 'WRITTEN_OFF' %}table-secondary{% endif %}">
+              <td><strong>{{ loco.locomotive }}</strong></td>
+              <td>{{ loco.loc_type|default:"N/A" }}</td>
+              <td>{{ loco.loc_class|default:"N/A" }}</td>
+              <td>{{ loco.capacity_in_tons|default:"N/A" }} tons</td>
+              <td>{{ loco.tractive_effort|default:"N/A" }} kN</td>
+              <td>
+                {% if loco.status == 'WRITTEN_OFF' %}
+                  <span class="badge bg-secondary">Written Off</span>
+                {% elif loco.status == 'ON_DUTY' %}
+                  <span class="badge bg-success">On Duty</span>
+                {% elif loco.status == 'IN_MAINTENANCE' %}
+                  <span class="badge bg-warning">In Maintenance</span>
+                {% else %}
+                  <span class="badge bg-primary">{{ loco.status }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm" role="group">
+                  {% if loco.status != 'WRITTEN_OFF' %}
+                    <form method="POST" action="{% url 'write_off_locomotive' loco.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to write off {{ loco.locomotive }}? This will mark it as no longer in use.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-warning" title="Write Off">
+                        <i class="fas fa-ban"></i>
+                      </button>
+                    </form>
+                  {% endif %}
+                  <form method="POST" action="{% url 'delete_locomotive' loco.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to PERMANENTLY DELETE {{ loco.locomotive }}? This cannot be undone!');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">No locomotives found</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- End of main content -->
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Optional Bootstrap icons if you use <i> tags -->

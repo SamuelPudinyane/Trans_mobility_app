@@ -1,0 +1,698 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Locomotive & Cargo Management - Transnet Mobility{% endblock %}
+{% block content %}
+
+<style>
+    .management-container {
+        max-width: 1600px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(227, 25, 55, 0.3);
+    }
+    
+    .page-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 32px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .page-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 16px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-action:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        color: white;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 4px solid;
+    }
+    
+    .stat-card.available {
+        border-left-color: #28a745;
+    }
+    
+    .stat-card.on-duty {
+        border-left-color: #17a2b8;
+    }
+    
+    .stat-card.maintenance {
+        border-left-color: #ffc107;
+    }
+    
+    .stat-card.ready {
+        border-left-color: #6c757d;
+    }
+    
+    .stat-card h3 {
+        font-size: 14px;
+        color: #6c757d;
+        margin: 0 0 10px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stat-card .number {
+        font-size: 36px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .stat-card .label {
+        font-size: 14px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 3px solid #E31937;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-title i {
+        color: #E31937;
+    }
+    
+    .item-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .item-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s;
+    }
+    
+    .item-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .item-card h4 {
+        margin: 0 0 10px 0;
+        font-size: 18px;
+        color: #333;
+    }
+    
+    .item-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 15px 0;
+    }
+    
+    .item-info-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+    }
+    
+    .item-info-row .label {
+        color: #6c757d;
+        font-weight: 600;
+    }
+    
+    .item-info-row .value {
+        color: #333;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .status-badge.available {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-badge.on-duty {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .status-badge.maintenance {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-badge.ready {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+    
+    .btn-activate {
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-top: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-activate:hover {
+        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
+    }
+    
+    .maintenance-table {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .maintenance-table thead {
+        background: linear-gradient(135deg, #333 0%, #555 100%);
+        color: white;
+    }
+    
+    .maintenance-table thead th {
+        padding: 15px;
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        border: none;
+    }
+    
+    .maintenance-table tbody td {
+        padding: 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .maintenance-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .btn-view-details {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-view-details:hover {
+        background: #5a6268;
+        color: white;
+    }
+    
+    .btn-update-status {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        color: #333;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-right: 8px;
+    }
+    
+    .btn-update-status:hover {
+        background: linear-gradient(135deg, #e0a800 0%, #d39e00 100%);
+        color: #333;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 24px;
+        }
+        
+        .item-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="management-container">
+    <div class="page-header">
+        <h1>
+            <i class="fas fa-cogs"></i>
+            Locomotive & Cargo Management
+        </h1>
+        <p>Manage locomotive and cargo status, maintenance schedules, and activations</p>
+    </div>
+    
+    <div class="action-buttons">
+        <a href="{% url 'schedule_maintenance' %}" class="btn-action">
+            <i class="fas fa-calendar-plus"></i>
+            Schedule Maintenance
+        </a>
+        <a href="{% url 'driver_assignment' %}" class="btn-action">
+            <i class="fas fa-user-plus"></i>
+            Assign Drivers
+        </a>
+    </div>
+    
+    <!-- Statistics Overview -->
+    <div class="stats-grid">
+        <div class="stat-card available">
+            <h3>Available Locomotives</h3>
+            <p class="number">{{ available_locomotives.count }}</p>
+            <p class="label">Ready for assignment</p>
+        </div>
+        <div class="stat-card on-duty">
+            <h3>On Duty</h3>
+            <p class="number">{{ on_duty_locomotives.count }}</p>
+            <p class="label">Currently assigned</p>
+        </div>
+        <div class="stat-card maintenance">
+            <h3>In Maintenance</h3>
+            <p class="number">{{ in_maintenance_locomotives.count|add:in_maintenance_cargo.count }}</p>
+            <p class="label">Locomotives & cargo</p>
+        </div>
+        <div class="stat-card ready">
+            <h3>Ready for Activation</h3>
+            <p class="number">{{ ready_for_activation_locomotives.count|add:ready_cargo.count }}</p>
+            <p class="label">Awaiting admin approval</p>
+        </div>
+    </div>
+    
+    <!-- Available Locomotives -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <i class="fas fa-check-circle"></i>
+            Available Locomotives
+        </h2>
+        
+        {% if available_locomotives %}
+        <div class="item-grid">
+            {% for loco in available_locomotives %}
+            <div class="item-card">
+                <h4>{{ loco.locomotive|default:"Unnamed Locomotive" }}</h4>
+                <div class="item-info">
+                    <div class="item-info-row">
+                        <span class="label">Type:</span>
+                        <span class="value">{{ loco.loc_type|default:"-" }}</span>
+                    </div>
+                    <div class="item-info-row">
+                        <span class="label">Class:</span>
+                        <span class="value">{{ loco.loc_class|default:"-" }}</span>
+                    </div>
+                    <div class="item-info-row">
+                        <span class="label">Capacity:</span>
+                        <span class="value">{{ loco.capacity_in_tons|default:"-" }} tons</span>
+                    </div>
+                    <div class="item-info-row">
+                        <span class="label">Status:</span>
+                        <span class="status-badge available">{{ loco.status }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-train"></i>
+            <p>No available locomotives at the moment.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- On Duty Locomotives -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <i class="fas fa-shipping-fast"></i>
+            On Duty Locomotives
+        </h2>
+        
+        {% if on_duty_locomotives %}
+        <div class="item-grid">
+            {% for loco in on_duty_locomotives %}
+            <div class="item-card">
+                <h4>{{ loco.locomotive|default:"Unnamed Locomotive" }}</h4>
+                <div class="item-info">
+                    <div class="item-info-row">
+                        <span class="label">Type:</span>
+                        <span class="value">{{ loco.loc_type|default:"-" }}</span>
+                    </div>
+                    <div class="item-info-row">
+                        <span class="label">Status:</span>
+                        <span class="status-badge on-duty">{{ loco.status }}</span>
+                    </div>
+                    {% if loco.id in locomotive_assignments %}
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6;">
+                        <strong style="font-size: 13px; color: #6c757d;">Assigned Drivers:</strong>
+                        {% for assignment in locomotive_assignments|get_item:loco.id %}
+                        <div style="font-size: 12px; color: #333; margin-top: 5px;">
+                            <i class="fas fa-user"></i> {{ assignment.driver_name }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-pause-circle"></i>
+            <p>No locomotives currently on duty.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Ready for Activation -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <i class="fas fa-clock"></i>
+            Ready for Activation
+        </h2>
+        
+        {% if ready_for_activation_locomotives or ready_cargo %}
+        <div class="item-grid">
+            {% for loco in ready_for_activation_locomotives %}
+            <div class="item-card">
+                <h4>{{ loco.locomotive|default:"Unnamed Locomotive" }}</h4>
+                <div class="item-info">
+                    <div class="item-info-row">
+                        <span class="label">Type:</span>
+                        <span class="value">Locomotive</span>
+                    </div>
+                    <div class="item-info-row">
+                        <span class="label">Status:</span>
+                        <span class="status-badge ready">Ready</span>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'activate_item' 'locomotive' loco.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-activate">
+                        <i class="fas fa-power-off"></i>
+                        Activate
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+            
+            {% for cargo in ready_cargo %}
+            <div class="item-card">
+                <h4>{{ cargo.cargo_type|default:"Unnamed Cargo" }}</h4>
+                <div class="item-info">
+                    <div class="item-info-row">
+                        <span class="label">Type:</span>
+                        <span class="value">Cargo</span>
+                    </div>
+                    <div class="item-info-row">
+                        <span class="label">Volume:</span>
+                        <span class="value">{{ cargo.cargo_volume|default:"-" }}</span>
+                    </div>
+                    <div class="item-info-row">
+                        <span class="label">Status:</span>
+                        <span class="status-badge ready">Ready</span>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'activate_item' 'cargo' cargo.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-activate">
+                        <i class="fas fa-power-off"></i>
+                        Activate
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-clipboard-check"></i>
+            <p>No items waiting for activation.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Active Maintenance Schedules -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <i class="fas fa-wrench"></i>
+            Active Locomotive Maintenance Schedules
+            {% if critical_count > 0 %}
+            <span class="badge bg-danger ms-2">{{ critical_count }} Critical</span>
+            {% endif %}
+            {% if high_count > 0 %}
+            <span class="badge bg-warning ms-2">{{ high_count }} High Priority</span>
+            {% endif %}
+        </h2>
+        
+        <!-- Filter and Sort Controls -->
+        <div class="filter-controls" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <form method="GET" id="filterForm">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label"><i class="fas fa-sort"></i> Sort By</label>
+                        <select name="sort_by" class="form-select" onchange="document.getElementById('filterForm').submit();">
+                            <option value="urgency" {% if sort_by == 'urgency' %}selected{% endif %}>Urgency (Critical First)</option>
+                            <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Newest First</option>
+                            <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest First</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="fas fa-calendar"></i> Start Date</label>
+                        <input type="date" name="start_date" id="locoStartDate" class="form-control" value="{{ start_date }}" onchange="validateLocoDateRange();">
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label"><i class="fas fa-calendar"></i> End Date</label>
+                        <input type="date" name="end_date" id="locoEndDate" class="form-control" value="{{ end_date }}" onchange="validateLocoDateRange();">
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label" style="opacity: 0;">Reset</label>
+                        <a href="{% url 'locomotive_dashboard' %}" class="btn btn-secondary w-100">
+                            <i class="fas fa-undo"></i> Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Urgency Legend -->
+            <div style="border-top: 1px solid #dee2e6; padding-top: 15px;">
+                <div style="font-weight: 600; margin-bottom: 10px;">
+                    <i class="fas fa-info-circle"></i> Maintenance Urgency Legend:
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <span style="background: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-exclamation-triangle"></i> CRITICAL (12+ months)
+                    </span>
+                    <span style="background: #fd7e14; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-exclamation"></i> HIGH (9-12 months)
+                    </span>
+                    <span style="background: #ffc107; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-minus-circle"></i> MEDIUM (6-9 months)
+                    </span>
+                    <span style="background: #90ee90; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-check-circle"></i> LOW (3-6 months)
+                    </span>
+                    <span style="background: #28a745; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-check-double"></i> GOOD (0-3 months)
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        {% if active_maintenance %}
+        <div style="overflow-x: auto;">
+            <table class="maintenance-table table">
+                <thead>
+                    <tr>
+                        <th>Urgency</th>
+                        <th>Locomotive</th>
+                        <th>Reason</th>
+                        <th>Last Maintenance</th>
+                        <th>Days Since</th>
+                        <th>Status</th>
+                        <th>Expected Completion</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for maintenance in active_maintenance %}
+                    <tr style="border-left: 5px solid {{ maintenance.urgency_color }};">
+                        <td>
+                            <span style="background-color: {{ maintenance.urgency_color }}; color: white; padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.85em; display: inline-block;">
+                                {{ maintenance.urgency_level }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>
+                                <i class="fas fa-train text-success"></i>
+                                {{ maintenance.locomotive.locomotive|default:"Unnamed Locomotive"|truncatechars:30 }}
+                            </strong>
+                        </td>
+                        <td>{{ maintenance.reason|truncatechars:50 }}</td>
+                        <td>
+                            {% if maintenance.last_maintenance_date %}
+                                {{ maintenance.last_maintenance_date|date:"Y-m-d" }}
+                            {% else %}
+                                <span class="text-danger"><i class="fas fa-times"></i> Never</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span style="font-weight: 600; color: {{ maintenance.urgency_color }};">
+                                {{ maintenance.days_since_last }} days
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge {% if maintenance.status == 'IN_PROGRESS' %}maintenance{% elif maintenance.status == 'COMPLETED' %}available{% else %}ready{% endif %}">
+                                {{ maintenance.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <small>{{ maintenance.expected_completion_date|date:"M d, Y" }}</small>
+                        </td>
+                        <td>
+                            {% if maintenance.status != 'ACTIVATED' %}
+                            <a href="{% url 'update_maintenance_status' maintenance.id %}" class="btn-update-status">
+                                <i class="fas fa-edit"></i>
+                                Update
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'maintenance_details' maintenance.id %}" class="btn-view-details">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-tools fa-3x"></i>
+            <p>No locomotive maintenance schedules to display</p>
+            <small class="text-muted">Click "Schedule Maintenance" to add locomotive maintenance records</small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function validateLocoDateRange() {
+    const startDate = document.getElementById('locoStartDate');
+    const endDate = document.getElementById('locoEndDate');
+    
+    if (startDate.value && endDate.value) {
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+        
+        if (end < start) {
+            alert('End date cannot be before start date. Please select a valid date range.');
+            endDate.value = '';
+            return false;
+        }
+    }
+    
+    // Submit form if dates are valid
+    document.getElementById('filterForm').submit();
+}
+</script>
+
+{% endblock %}

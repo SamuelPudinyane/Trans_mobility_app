@@ -10,12 +10,12 @@
     input, select, button, textarea { margin: 5px 0; }
   </style>
             <!-- Main Content -->
-            <div class="p-4">
+            <div class="container-fluid px-3">
                 
                 
             <div class="card mt-4">
-                    <div class="card-header">
-                        <h3 class="">CARGO ATTRIBUTES</h3>
+                    <div class="card-header" style="background: linear-gradient(135deg, #E31937 0%, #8B0000 100%);">
+                        <h3 class="text-white mb-0">📦 CARGO SPECIFICATIONS</h3>
                     </div>
 
                 
@@ -23,6 +23,21 @@
                     <form id="cargoForm" method="post" action="">
                       {% csrf_token %}
                       <input type="hidden" name="selected_spec_id" value="" />
+                      
+                      <div class="form-group-row">
+                        <label class="form-label">Select Wagon *</label>
+                        <select class="form-select" name="wagon_id" required>
+                          <option value="" disabled selected>Select wagon...</option>
+                          {% if wagons %}
+                            {% for wagon in wagons %}
+                              <option value="{{ wagon.id }}" data-capacity="{{ wagon.payload_capacity }}">{{ wagon.wagon_number }} - {{ wagon.wagon_type }} (Capacity: {{ wagon.payload_capacity }}t)</option>
+                            {% endfor %}
+                          {% else %}
+                            <option disabled>No wagons available</option>
+                          {% endif %}
+                        </select>
+                      </div>
+
                       <div class="mb-3">
                         <label class="form-label">Select Cargo</label>
                         <div class="input-group">
@@ -30,7 +45,7 @@
                             <option value="" disabled selected>Select cargo...</option>
                             {% if cargos %}
                               {% for c in cargos %}
-                                <option value="{{ c.id }}">{{ c.name }}</option>
+                                <option value="{{ c.id }}">{{ c.wagon_number }} ({{ c.wagon_type }}) - {{ c.cargo_type }}</option>
                               {% endfor %}
                               <option disabled></option>
                             {% endif %}
@@ -47,15 +62,20 @@
                                 <div class="card-body">
                   <div class="spec-item">
                     <label class="form-label ">Cargo Type</label>
-                    <input type="text" name="cargo_type" class="form-control" placeholder="Cargo Type">
+                    <input type="text" name="cargo_type" class="form-control" placeholder="Enter cargo type (e.g., Coal, Iron Ore, Containers, Fuel, Grain)">
                   </div>
                   <div class="spec-item">
                     <label class="form-label">Cargo Volume M³</label>
-                    <input type="number" name="cargo_volume" class="form-control" placeholder="Cargo Volume M³">
+                    <input type="number" name="cargo_volume" class="form-control" placeholder="Enter cargo volume in cubic meters (e.g., 150, 500, 1200)">
                   </div>
                   <div class="spec-item">
-                    <label class="form-label ">Special handling Requirements if any</label>
-                    <input type="text" name="special_handling" class="form-control" placeholder="Special handling Requirements if any">
+                    <label class="form-label">Cargo Weight (Tonnes) *</label>
+                    <input type="number" step="0.01" name="cargo_weight_tons" class="form-control" placeholder="Enter cargo weight in tonnes" required>
+                    <small class="text-muted">Weight must not exceed wagon payload capacity</small>
+                  </div>
+                  <div class="spec-item">
+                    <label class="form-label ">Special Handling Requirements if any</label>
+                    <input type="text" name="special_handling" class="form-control" placeholder="Enter special handling requirements (e.g., Temperature controlled, Hazardous material, Fragile)">
                   </div>
                                 </div>
                             </div>
@@ -71,7 +91,8 @@
           </form>
           <!-- Question Builder inside same card -->
           <div class="builder mt-4">
-            <h2>Add Section</h2>
+            <h2 class="card-title">📋 Add Additional Specifications</h2>
+            <p class="text-muted">Use this section to add any additional cargo specifications not covered in the form above.</p>
             <div class="mb-3">
               <label class="form-label">Question Text:</label>
               <input class="form-control" type="text" id="questionText">
@@ -105,6 +126,160 @@
   let questionIndex = 0;
   const surveyPreview = document.getElementById("surveyPreviewInForm");
   const dynamicFields = document.getElementById("dynamicSurveyFields");
+
+    // Function to parse survey_raw and recreate questions for editing
+    function loadSurveyQuestions(surveyRaw) {
+      if (!surveyRaw || surveyRaw.trim() === '') return;
+      
+      // Clear existing questions
+      surveyPreview.innerHTML = '';
+      dynamicFields.innerHTML = '';
+      questionIndex = 0;
+      
+      const parts = surveyRaw.split(',');
+      
+      // Group every 3 parts: [text, type, answers]
+      for (let i = 0; i < parts.length; i += 3) {
+        if (i + 1 >= parts.length) break;
+        
+        const qtext = parts[i] || '';
+        const qtype = parts[i + 1] || 'text';
+        const answersStr = parts[i + 2] || '';
+        
+        if (!qtext.trim()) continue;
+        
+        let options = [];
+        if (answersStr && (qtype === 'radio' || qtype === 'checkbox' || qtype === 'dropdown')) {
+          options = answersStr.split(',').map(o => o.trim()).filter(o => o);
+          if (options.length === 0) options = ['Option 1', 'Option 2'];
+        }
+        
+        recreateQuestion(qtext, qtype, options, answersStr);
+      }
+    }
+    
+    // Helper function to recreate a question
+    function recreateQuestion(text, type, options, answer) {
+      const idx = questionIndex++;
+
+      const previewWrapper = document.createElement("div");
+      previewWrapper.className = 'd-flex align-items-center justify-content-between mb-2 p-2 border rounded';
+      previewWrapper.id = `preview-${idx}`;
+      
+      const leftSection = document.createElement('div');
+      leftSection.className = 'd-flex align-items-center';
+      
+      const previewLabel = document.createElement("strong");
+      previewLabel.textContent = text;
+      leftSection.appendChild(previewLabel);
+      
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'badge bg-secondary ms-2';
+      const typeMap = {
+        text: 'Short Text',
+        textarea: 'Long Text',
+        radio: 'Multiple Choice (Single)',
+        checkbox: 'Multiple Choice (Multiple)',
+        dropdown: 'Dropdown'
+      };
+      typeBadge.textContent = typeMap[type] || type;
+      leftSection.appendChild(typeBadge);
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn btn-sm btn-danger';
+      removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+      removeBtn.addEventListener('click', () => {
+        document.getElementById(`meta-${idx}`)?.remove();
+        document.getElementById(`answer-${idx}`)?.remove();
+        document.getElementById(`preview-${idx}`)?.remove();
+      });
+      
+      previewWrapper.appendChild(leftSection);
+      previewWrapper.appendChild(removeBtn);
+      surveyPreview.appendChild(previewWrapper);
+
+      const meta = document.createElement('input');
+      meta.type = 'hidden';
+      meta.name = 'survey_questions[]';
+      meta.id = `meta-${idx}`;
+      meta.value = JSON.stringify({ text: text, type: type, options: options });
+      dynamicFields.appendChild(meta);
+
+      const answerWrapper = document.createElement('div');
+      answerWrapper.classList.add('form-group-row');
+      answerWrapper.id = `answer-${idx}`;
+      const answerLabel = document.createElement('label');
+      answerLabel.textContent = text;
+      answerWrapper.appendChild(answerLabel);
+
+      if (type === 'text') {
+        const a = document.createElement('input');
+        a.type = 'text';
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        a.value = answer || '';
+        answerWrapper.appendChild(a);
+      } else if (type === 'textarea') {
+        const a = document.createElement('textarea');
+        a.name = `survey_answers[${idx}]`;
+        a.className = 'form-control';
+        a.value = answer || '';
+        answerWrapper.appendChild(a);
+      } else if (type === 'radio') {
+        const optsDiv = document.createElement('div');
+        const answerValues = answer ? answer.split(',').map(v => v.trim()) : [];
+        options.forEach(opt => {
+          const r = document.createElement('input');
+          r.type = 'radio';
+          r.name = `survey_answers[${idx}]`;
+          r.value = opt;
+          r.className = 'me-1';
+          if (answerValues.includes(opt)) r.checked = true;
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(r);
+          lbl.appendChild(document.createTextNode(opt));
+          optsDiv.appendChild(lbl);
+        });
+        answerWrapper.appendChild(optsDiv);
+      } else if (type === 'dropdown') {
+        const sel = document.createElement('select');
+        sel.name = `survey_answers[${idx}]`;
+        sel.className = 'form-select';
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '-- Select --';
+        sel.appendChild(defaultOpt);
+        options.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          if (answer === opt) o.selected = true;
+          sel.appendChild(o);
+        });
+        answerWrapper.appendChild(sel);
+      } else if (type === 'checkbox') {
+        const boxContainer = document.createElement('div');
+        const answerValues = answer ? answer.split(',').map(v => v.trim()) : [];
+        options.forEach(opt => {
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.name = `survey_answers[${idx}][]`;
+          cb.value = opt;
+          cb.className = 'me-1';
+          if (answerValues.includes(opt)) cb.checked = true;
+          const lbl = document.createElement('label');
+          lbl.className = 'me-3';
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(opt));
+          boxContainer.appendChild(lbl);
+        });
+        answerWrapper.appendChild(boxContainer);
+      }
+
+      dynamicFields.appendChild(answerWrapper);
+    }
 
     function addQuestion() {
       const text = document.getElementById("questionText").value.trim();
@@ -233,6 +408,48 @@
     }
   </script>
     <script>
+      // Additional Specs Functions - Define early so they're available everywhere
+      let additionalSpecCount = 0;
+      
+      function addAdditionalSpecField(label = '', value = '') {
+        const container = document.getElementById('additionalSpecsContainer');
+        const fieldGroup = document.createElement('div');
+        fieldGroup.className = 'row mb-3 additional-spec-field';
+        fieldGroup.id = `additional-spec-${additionalSpecCount}`;
+        
+        fieldGroup.innerHTML = `
+          <div class="col-md-5">
+            <input type="text" class="form-control" name="additional_label[]" placeholder="Field Label (e.g., 'Temperature Range')" value="${label}">
+          </div>
+          <div class="col-md-5">
+            <input type="text" class="form-control" name="additional_value[]" placeholder="Field Value (e.g., '-20°C to 25°C')" value="${value}">
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeAdditionalSpecField(${additionalSpecCount})">
+              <i class="fas fa-trash"></i> Remove
+            </button>
+          </div>
+        `;
+        
+        container.appendChild(fieldGroup);
+        additionalSpecCount++;
+      }
+      
+      function removeAdditionalSpecField(id) {
+        const field = document.getElementById(`additional-spec-${id}`);
+        if (field) {
+          field.remove();
+        }
+      }
+      
+      function loadAdditionalSpecs(specs) {
+        if (specs && Array.isArray(specs)) {
+          specs.forEach(spec => {
+            addAdditionalSpecField(spec.label || '', spec.value || '');
+          });
+        }
+      }
+      
       (function(){
         const sel = document.querySelector('select[name="cargo_select"]');
         const btn = document.getElementById('selectCargoBtn');
@@ -240,21 +457,38 @@
         const endpoint = "{% url 'api_get_cargo_spec' %}";
         function fetchSpecById(id){
           if (!id) return;
+          
+          // Clear existing survey questions first
+          if (typeof surveyPreview !== 'undefined' && surveyPreview) surveyPreview.innerHTML = '';
+          if (typeof dynamicFields !== 'undefined' && dynamicFields) dynamicFields.innerHTML = '';
+          if (typeof questionIndex !== 'undefined') questionIndex = 0;
+          
           fetch(endpoint + '?id=' + encodeURIComponent(id))
             .then(r => { if (r.status === 204) return null; return r.json(); })
             .then(data => {
               if (!data) return;
               const set = (n,v) => { const el = document.querySelector('[name="'+n+'"]'); if (el) el.value = v || ''; };
               const selIdEl = document.querySelector('[name="selected_spec_id"]'); if (selIdEl) selIdEl.value = data.id || '';
+              set('wagon_id', data.wagon_id);
               set('cargo_type', data.cargo_type);
               set('cargo_volume', data.cargo_volume);
+              set('cargo_weight_tons', data.cargo_weight_tons);
               set('special_handling', data.special_handling);
+              
+              // Load survey questions from survey_raw
+              if (data.survey_raw) {
+                loadSurveyQuestions(data.survey_raw);
+              }
             }).catch(err => console.warn('cargo fetch', err));
         }
         sel.addEventListener('change', () => fetchSpecById(sel.value));
         if (btn) btn.addEventListener('click', () => fetchSpecById(sel.value));
       })();
     </script>
+
+</div>
+<!-- End of main content -->
+
     <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% endblock %}

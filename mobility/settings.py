@@ -62,6 +62,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'transnet_mobility.context_processors.account_type',  # Add custom context processor
+                'transnet_mobility.context_processors.dashboard_stats',  # Dashboard statistics
+                'transnet_mobility.context_processors.unread_notifications_count',  # Unread notifications count
             ],
         },
     },
@@ -123,12 +126,22 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "transnet_mobility/static"]
 
+# Media files (User uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.file'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Changed to database backend
 
 AUTH_USER_MODEL = "transnet_mobility.CustomUser"
+
+# Custom authentication backend for email login
+AUTHENTICATION_BACKENDS = [
+    'transnet_mobility.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Fallback
+]
 

@@ -1,0 +1,1231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Notifications - Transnet Mobility{% endblock %}
+
+{% block content %}
+<style>
+    .notifications-container {
+        padding: 20px;
+    }
+    
+    .notifications-header {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+    }
+    
+    .notifications-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 32px;
+    }
+    
+    .stats-row {
+        display: flex;
+        gap: 20px;
+        margin-top: 15px;
+    }
+    
+    .stat-item {
+        background: rgba(255,255,255,0.2);
+        padding: 10px 20px;
+        border-radius: 8px;
+    }
+    
+    .stat-item .number {
+        font-size: 24px;
+        font-weight: 700;
+    }
+    
+    .stat-item .label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .notification-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 5px solid #17a2b8;
+        transition: all 0.3s;
+    }
+    
+    .notification-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .notification-card.unread {
+        border-left-color: #ffc107;
+        background: #fffbf0;
+    }
+    
+    .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 15px;
+    }
+    
+    .notification-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 5px 0;
+    }
+    
+    .notification-time {
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .distance-badge {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .notification-body {
+        margin: 15px 0;
+    }
+    
+    .detail-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 15px 0;
+    }
+    
+    .detail-item {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 6px;
+    }
+    
+    .detail-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    
+    .detail-value {
+        font-size: 14px;
+        color: #333;
+    }
+    
+    .issue-box {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #ffc107;
+        margin: 15px 0;
+    }
+    
+    .issue-box strong {
+        color: #856404;
+    }
+    
+    .notification-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+        transform: translateY(-2px);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+    
+    .unread-badge {
+        background: #ffc107;
+        color: #856404;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+    }
+    
+    /* Messaging styles */
+    .messaging-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .messaging-tabs {
+        display: flex;
+        gap: 10px;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 20px;
+    }
+    
+    .messaging-tabs .tab {
+        padding: 12px 24px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        color: #666;
+        position: relative;
+        transition: all 0.3s;
+    }
+    
+    .messaging-tabs .tab.active {
+        color: #17a2b8;
+    }
+    
+    .messaging-tabs .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #17a2b8;
+    }
+    
+    .messaging-tabs .tab:hover {
+        color: #17a2b8;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .user-search-box {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .search-results.show {
+        display: block;
+    }
+    
+    .search-result-item {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .search-result-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    .selected-recipients {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    
+    .recipient-tag {
+        background: #17a2b8;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .recipient-tag .remove {
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .message-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border-left: 4px solid transparent;
+    }
+    
+    .message-item:hover {
+        background: #e9ecef;
+        transform: translateX(4px);
+    }
+    
+    .message-item.unread {
+        background: #fffbf0;
+        border-left-color: #ffc107;
+        font-weight: 600;
+    }
+    
+    .message-sender {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    
+    .message-subject {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 4px;
+    }
+    
+    .message-preview {
+        font-size: 13px;
+        color: #999;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .message-time {
+        font-size: 12px;
+        color: #999;
+        margin-top: 6px;
+    }
+    
+    .message-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .message-modal.show {
+        display: flex;
+    }
+    
+    .message-modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .message-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .message-modal-close {
+        font-size: 28px;
+        cursor: pointer;
+        color: #666;
+        line-height: 1;
+    }
+    
+    .message-modal-close:hover {
+        color: #333;
+    }
+    
+    .role-selector {
+        margin-top: 15px;
+        padding: 20px;
+        background: linear-gradient(135deg, #fff3cd 0%, #fff9e6 100%);
+        border-radius: 8px;
+        border: 2px solid #ffc107;
+        display: none;
+        box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+    }
+    
+    .role-selector.show {
+        display: block;
+        animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .counter-badge {
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 11px;
+        font-weight: bold;
+        margin-left: 6px;
+    }
+</style>
+
+<div class="notifications-container">
+    <div class="notifications-header">
+        <h1><i class="fas fa-bell"></i> My Notifications</h1>
+        <p>Dispatch assignments, driver assignments, and private messages</p>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="number">{{ total_count }}</div>
+                <div class="label">Total Notifications</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="total-unread-count">{{ unread_count }}</div>
+                <div class="label">Unread</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="message-unread-count">0</div>
+                <div class="label">Unread Messages</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Private Messaging Section -->
+    <div class="messaging-section">
+        <div class="messaging-tabs">
+            <button class="tab active" onclick="switchTab('compose')">
+                <i class="fas fa-edit"></i> Compose Message
+            </button>
+            <button class="tab" onclick="switchTab('inbox')">
+                <i class="fas fa-inbox"></i> Inbox 
+                <span class="counter-badge" id="inbox-counter" style="display:none;">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('sent')">
+                <i class="fas fa-paper-plane"></i> Sent Messages
+            </button>
+        </div>
+        
+        <!-- Compose Message Tab -->
+        <div id="compose-tab" class="tab-content active">
+            <h3>Send Private Message</h3>
+            
+            {% if Account_type == 'ADMIN' or Account_type == 'Administrator' %}
+            <div class="alert alert-info mb-3">
+                <strong><i class="fas fa-info-circle"></i> Admin Feature:</strong> You can send messages to individual users or to entire groups by role.
+            </div>
+            
+            <div class="form-group mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="group-message-toggle" onchange="toggleGroupMessage()" style="width: 50px; height: 25px; cursor: pointer;">
+                    <label class="form-check-label fw-bold ms-2" for="group-message-toggle" style="font-size: 16px;">
+                        <i class="fas fa-users"></i> Send to group (by role)
+                    </label>
+                </div>
+            </div>
+            
+            <div class="role-selector" id="role-selector">
+                <label class="form-label fw-bold"><i class="fas fa-user-tag"></i> Select Role:</label>
+                <select class="form-select form-select-lg" id="target-role">
+                    <option value="">Choose role...</option>
+                    <option value="ALL">📢 All Users</option>
+                    <option value="ADMIN">👑 Administrators</option>
+                    <option value="STAFF">👔 Staff</option>
+                    <option value="DRIVER">🚂 Train Drivers</option>
+                    <option value="ASSISTANT_DRIVER">🚂 Assistant Drivers</option>
+                    <option value="ELECTRICAL_MAINTENANCE">⚡ Electrical Maintenance</option>
+                    <option value="MECHANICAL_MAINTENANCE">🔧 Mechanical Maintenance</option>
+                    <option value="EMERGENCY_RESPONSE">🚨 Emergency Response</option>
+                    <option value="SECURITY_TEAM">🛡️ Security Team</option>
+                    <option value="MEDICAL_TEAM">⚕️ Medical Team</option>
+                    <option value="TOWING_SERVICE">🚛 Towing Service</option>
+                </select>
+                <small class="text-muted d-block mt-2">
+                    <i class="fas fa-exclamation-triangle"></i> This message will be sent to all users in the selected role.
+                </small>
+            </div>
+            {% endif %}
+            
+            <div id="user-search-container">
+                <div class="user-search-box">
+                    <label class="form-label fw-bold">Search Users:</label>
+                    <input type="text" class="form-control" id="user-search" 
+                           placeholder="Search by name, email, or employee number..." 
+                           oninput="searchUsers(this.value)">
+                    <div class="search-results" id="search-results"></div>
+                </div>
+                
+                <div class="selected-recipients" id="selected-recipients"></div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label fw-bold">Subject:</label>
+                <input type="text" class="form-control" id="message-subject" placeholder="Message subject...">
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label fw-bold">Message:</label>
+                <textarea class="form-control" id="message-content" rows="6" placeholder="Type your message here..."></textarea>
+            </div>
+            
+            <button class="btn btn-primary" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i> Send Message
+            </button>
+        </div>
+        
+        <!-- Inbox Tab -->
+        <div id="inbox-tab" class="tab-content">
+            <h3>Inbox</h3>
+            <div id="inbox-messages">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2">Loading messages...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sent Tab -->
+        <div id="sent-tab" class="tab-content">
+            <h3>Sent Messages</h3>
+            <div id="sent-messages">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2">Loading messages...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Message View Modal -->
+    <div class="message-modal" id="message-modal">
+        <div class="message-modal-content">
+            <div class="message-modal-header">
+                <h3 id="modal-subject"></h3>
+                <span class="message-modal-close" onclick="closeMessageModal()">&times;</span>
+            </div>
+            <div class="detail-item mb-3">
+                <div class="detail-label">From</div>
+                <div class="detail-value" id="modal-sender"></div>
+            </div>
+            <div class="detail-item mb-3">
+                <div class="detail-label">Date</div>
+                <div class="detail-value" id="modal-date"></div>
+            </div>
+            <div class="mb-3">
+                <div class="detail-label">Message</div>
+                <div id="modal-message" style="white-space: pre-wrap; padding: 15px; background: #f8f9fa; border-radius: 6px; margin-top: 8px;"></div>
+            </div>
+            <button class="btn btn-primary" onclick="replyToMessage()">
+                <i class="fas fa-reply"></i> Reply
+            </button>
+            <button class="btn btn-secondary" onclick="closeMessageModal()">
+                Close
+            </button>
+        </div>
+    </div>
+    
+    <h2 class="mt-5 mb-4">System Notifications</h2>
+    
+    {% if notifications %}
+        {% for notification in notifications %}
+        
+        {% if notification.type == 'dispatch' %}
+        <!-- Dispatch Notification -->
+        <div class="notification-card {% if not notification.is_read %}unread{% endif %}">
+            <div class="notification-header">
+                <div>
+                    <h3 class="notification-title">
+                        <i class="fas fa-ambulance"></i> 
+                        Emergency Dispatch - Request #{{ notification.request_id }}
+                        {% if not notification.is_read %}
+                        <span class="unread-badge">New</span>
+                        {% endif %}
+                    </h3>
+                    <div class="notification-time">
+                        <i class="fas fa-clock"></i> Dispatched: {{ notification.dispatched_at|date:"Y-m-d H:i:s" }}
+                    </div>
+                </div>
+                {% if notification.distance_km %}
+                <div class="distance-badge">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ notification.distance_km|floatformat:2 }} km away
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="notification-body">
+                <div class="issue-box">
+                    <strong><i class="fas fa-exclamation-triangle"></i> Issue:</strong>
+                    <p style="margin: 5px 0 0 0;">{{ notification.request_issue }}</p>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-user"></i> Requester</div>
+                        <div class="detail-value">{{ notification.requester_name }}</div>
+                        <small>{{ notification.requester_email }}</small>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-phone"></i> Contact</div>
+                        <div class="detail-value">{{ notification.requester_phone }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-users"></i> Response Team</div>
+                        <div class="detail-value">{{ notification.response_team }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-map-marker-alt"></i> Location</div>
+                        <div class="detail-value">
+                            {% if notification.request_latitude and notification.request_longitude %}
+                                {{ notification.request_latitude|floatformat:4 }}, {{ notification.request_longitude|floatformat:4 }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if notification.estimated_arrival %}
+                <div class="detail-item" style="margin-top: 10px;">
+                    <div class="detail-label"><i class="fas fa-clock"></i> Estimated Arrival</div>
+                    <div class="detail-value">{{ notification.estimated_arrival|date:"Y-m-d H:i" }}</div>
+                </div>
+                {% endif %}
+                
+                {% if notification.response_notes %}
+                <div class="detail-item" style="margin-top: 10px;">
+                    <div class="detail-label"><i class="fas fa-comment-alt"></i> Response Notes</div>
+                    <div class="detail-value">{{ notification.response_notes }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="detail-item" style="margin-top: 10px;">
+                    <div class="detail-label"><i class="fas fa-user-tie"></i> Dispatched By</div>
+                    <div class="detail-value">{{ notification.dispatched_by }}</div>
+                </div>
+            </div>
+            
+            <div class="notification-actions">
+                <a href="{% url 'dispatch_response' notification.id %}" class="btn btn-success">
+                    <i class="fas fa-map-marked-alt"></i> View Full Details & Map
+                </a>
+                
+                {% if notification.request_latitude and notification.request_longitude %}
+                <a href="{% url 'map_location' %}?lat={{ notification.request_latitude }}&lng={{ notification.request_longitude }}&user={{ notification.requester_name|urlencode }}&issue={{ notification.request_issue|urlencode }}" 
+                   class="btn btn-primary">
+                    <i class="fas fa-map"></i> Quick Map View
+                </a>
+                {% endif %}
+                
+                {% if not notification.is_read %}
+                <form method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                    <input type="hidden" name="notification_type" value="dispatch">
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-check"></i> Mark as Read
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% elif notification.type == 'assignment' %}
+        <!-- Assignment Notification -->
+        <div class="notification-card {% if not notification.is_read %}unread{% endif %}" style="border-left-color: #28a745;">
+            <div class="notification-header">
+                <div>
+                    <h3 class="notification-title">
+                        <i class="fas fa-train"></i> 
+                        Driver Assignment - {{ notification.notification_type|title }}
+                        {% if not notification.is_read %}
+                        <span class="unread-badge">New</span>
+                        {% endif %}
+                    </h3>
+                    <div class="notification-time">
+                        <i class="fas fa-clock"></i> {{ notification.created_at|date:"Y-m-d H:i:s" }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="notification-body">
+                <div class="issue-box" style="background: #d1f2eb; border-left-color: #28a745;">
+                    <strong><i class="fas fa-info-circle"></i> Assignment Details:</strong>
+                    <p style="margin: 5px 0 0 0;">{{ notification.message }}</p>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-train"></i> Locomotive</div>
+                        <div class="detail-value">{{ notification.locomotive_name }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-tag"></i> Action Type</div>
+                        <div class="detail-value">{{ notification.notification_type|title }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="notification-actions">
+                {% if notification.locomotive_id and notification.notification_type != 'UNASSIGNED' %}
+                <a href="{% url 'locomotive_config' %}" class="btn btn-success">
+                    <i class="fas fa-train"></i> View Locomotive Details
+                </a>
+                {% endif %}
+                
+                {% if not notification.is_read %}
+                <form method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                    <input type="hidden" name="notification_type" value="assignment">
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-check"></i> Mark as Read
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h3>No Notifications</h3>
+        <p>You don't have any dispatch notifications yet</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Selected recipients storage
+let selectedRecipients = [];
+let currentMessageForReply = null;
+let currentReplyToSender = null; // Store sender info for reply
+
+// Tab switching
+function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.messaging-tabs .tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.add('active');
+    event.target.closest('.tab').classList.add('active');
+    
+    // Load data if needed
+    if (tabName === 'inbox') {
+        loadInbox();
+    } else if (tabName === 'sent') {
+        loadSentMessages();
+    }
+}
+
+// Toggle group message mode (Admin only)
+function toggleGroupMessage() {
+    const isGroupMode = document.getElementById('group-message-toggle').checked;
+    const roleSelector = document.getElementById('role-selector');
+    const userSearchContainer = document.getElementById('user-search-container');
+    
+    if (isGroupMode) {
+        roleSelector.classList.add('show');
+        userSearchContainer.style.display = 'none';
+        selectedRecipients = [];
+        updateSelectedRecipients();
+    } else {
+        roleSelector.classList.remove('show');
+        userSearchContainer.style.display = 'block';
+    }
+}
+
+// Search users
+let searchTimeout;
+function searchUsers(query) {
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        document.getElementById('search-results').classList.remove('show');
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/search-users/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                displaySearchResults(data.users);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+            });
+    }, 300);
+}
+
+// Display search results
+function displaySearchResults(users) {
+    const resultsContainer = document.getElementById('search-results');
+    
+    if (users.length === 0) {
+        resultsContainer.innerHTML = '<div class="search-result-item">No users found</div>';
+        resultsContainer.classList.add('show');
+        return;
+    }
+    
+    let html = '';
+    users.forEach(user => {
+        // Check if already selected
+        if (selectedRecipients.find(r => r.id === user.id)) {
+            return;
+        }
+        
+        html += `
+            <div class="search-result-item" data-user-id="${user.id}" data-user-name="${user.name}" data-user-email="${user.email}" onclick="addRecipientFromElement(this)">
+                <div><strong>${user.name}</strong></div>
+                <div style="font-size: 12px; color: #666;">${user.email} - ${user.role}</div>
+                ${user.employee_number !== 'N/A' ? `<div style="font-size: 11px; color: #999;">Emp #: ${user.employee_number}</div>` : ''}
+            </div>
+        `;
+    });
+    
+    resultsContainer.innerHTML = html;
+    resultsContainer.classList.add('show');
+}
+
+// Add recipient from element (safer method)
+function addRecipientFromElement(element) {
+    const id = element.getAttribute('data-user-id');
+    const name = element.getAttribute('data-user-name');
+    const email = element.getAttribute('data-user-email');
+    addRecipient(id, name, email);
+}
+
+// Add recipient
+function addRecipient(id, name, email) {
+    selectedRecipients.push({ id, name, email });
+    updateSelectedRecipients();
+    document.getElementById('search-results').classList.remove('show');
+    document.getElementById('user-search').value = '';
+}
+
+// Remove recipient
+function removeRecipient(id) {
+    selectedRecipients = selectedRecipients.filter(r => r.id !== id);
+    updateSelectedRecipients();
+}
+
+// Update selected recipients display
+function updateSelectedRecipients() {
+    const container = document.getElementById('selected-recipients');
+    
+    if (selectedRecipients.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    selectedRecipients.forEach(recipient => {
+        html += `
+            <div class="recipient-tag">
+                ${recipient.name}
+                <span class="remove" data-recipient-id="${recipient.id}" onclick="removeRecipientFromElement(this)">&times;</span>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Remove recipient from element
+function removeRecipientFromElement(element) {
+    const id = element.getAttribute('data-recipient-id');
+    removeRecipient(id);
+}
+
+// Send message
+function sendMessage() {
+    const subject = document.getElementById('message-subject').value.trim();
+    const message = document.getElementById('message-content').value.trim();
+    const isGroupMessage = document.getElementById('group-message-toggle')?.checked || false;
+    const targetRole = document.getElementById('target-role')?.value || '';
+    
+    if (!message) {
+        alert('Please enter a message');
+        return;
+    }
+    
+    if (!isGroupMessage && selectedRecipients.length === 0) {
+        alert('Please select at least one recipient');
+        return;
+    }
+    
+    if (isGroupMessage && !targetRole) {
+        alert('Please select a role');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('subject', subject);
+    formData.append('message', message);
+    formData.append('is_group', isGroupMessage);
+    formData.append('target_role', targetRole);
+    
+    if (!isGroupMessage) {
+        selectedRecipients.forEach(recipient => {
+            formData.append('recipient_ids[]', recipient.id);
+        });
+    }
+    
+    if (currentMessageForReply) {
+        formData.append('parent_id', currentMessageForReply);
+    }
+    
+    fetch('/api/send-message/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Message sent successfully to ${data.recipients.length} recipient(s)`);
+            // Clear form
+            document.getElementById('message-subject').value = '';
+            document.getElementById('message-content').value = '';
+            selectedRecipients = [];
+            updateSelectedRecipients();
+            currentMessageForReply = null;
+            
+            if (document.getElementById('group-message-toggle')) {
+                document.getElementById('group-message-toggle').checked = false;
+                toggleGroupMessage();
+            }
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Send error:', error);
+        alert('Failed to send message');
+    });
+}
+
+// Load inbox
+function loadInbox() {
+    fetch('/api/get-messages/')
+        .then(response => response.json())
+        .then(data => {
+            displayInboxMessages(data.messages);
+            updateMessageCounts(data.unread_count);
+        })
+        .catch(error => {
+            console.error('Load inbox error:', error);
+            document.getElementById('inbox-messages').innerHTML = '<div class="text-center text-danger py-4">Failed to load messages</div>';
+        });
+}
+
+// Display inbox messages
+function displayInboxMessages(messages) {
+    const container = document.getElementById('inbox-messages');
+    
+    if (messages.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>No Messages</h3><p>Your inbox is empty</p></div>';
+        return;
+    }
+    
+    let html = '';
+    messages.forEach(msg => {
+        html += `
+            <div class="message-item ${msg.is_read ? '' : 'unread'}" onclick="viewMessage(${msg.id}, ${msg.recipient_id})">
+                <div class="message-sender">
+                    ${msg.sender_name} 
+                    ${msg.is_group_message ? `<span class="badge bg-info">Group: ${msg.target_role}</span>` : ''}
+                    ${msg.is_reply ? '<i class="fas fa-reply" title="Reply"></i>' : ''}
+                </div>
+                <div class="message-subject">${msg.subject}</div>
+                <div class="message-preview">${msg.message.substring(0, 100)}${msg.message.length > 100 ? '...' : ''}</div>
+                <div class="message-time">${formatDate(msg.created_at)}</div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Load sent messages
+function loadSentMessages() {
+    fetch('/api/get-sent-messages/')
+        .then(response => response.json())
+        .then(data => {
+            displaySentMessages(data.messages);
+        })
+        .catch(error => {
+            console.error('Load sent error:', error);
+            document.getElementById('sent-messages').innerHTML = '<div class="text-center text-danger py-4">Failed to load messages</div>';
+        });
+}
+
+// Display sent messages
+function displaySentMessages(messages) {
+    const container = document.getElementById('sent-messages');
+    
+    if (messages.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-paper-plane"></i><h3>No Sent Messages</h3><p>You haven\'t sent any messages yet</p></div>';
+        return;
+    }
+    
+    let html = '';
+    messages.forEach(msg => {
+        html += `
+            <div class="message-item">
+                <div class="message-sender">
+                    To: ${msg.recipients.join(', ').substring(0, 50)}${msg.recipients.join(', ').length > 50 ? '...' : ''} 
+                    (${msg.recipient_count} recipient${msg.recipient_count > 1 ? 's' : ''})
+                    ${msg.is_group_message ? `<span class="badge bg-info">Group: ${msg.target_role}</span>` : ''}
+                </div>
+                <div class="message-subject">${msg.subject}</div>
+                <div class="message-preview">${msg.message.substring(0, 100)}${msg.message.length > 100 ? '...' : ''}</div>
+                <div class="message-time">${formatDate(msg.created_at)}</div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// View message
+function viewMessage(messageId, recipientId) {
+    fetch(`/api/get-messages/`)
+        .then(response => response.json())
+        .then(data => {
+            const message = data.messages.find(m => m.id === messageId);
+            if (message) {
+                document.getElementById('modal-subject').textContent = message.subject;
+                document.getElementById('modal-sender').textContent = `${message.sender_name} (${message.sender_email})`;
+                document.getElementById('modal-date').textContent = formatDate(message.created_at);
+                document.getElementById('modal-message').textContent = message.message;
+                
+                currentMessageForReply = messageId;
+                // Store sender info for reply
+                currentReplyToSender = {
+                    id: message.sender_id,
+                    name: message.sender_name,
+                    email: message.sender_email
+                };
+                
+                document.getElementById('message-modal').classList.add('show');
+                
+                // Mark as read
+                if (!message.is_read) {
+                    markAsRead(recipientId);
+                }
+            }
+        });
+}
+
+// Reply to message
+function replyToMessage() {
+    closeMessageModal();
+    
+    // Clear any existing recipients and add the sender
+    selectedRecipients = [];
+    if (currentReplyToSender) {
+        selectedRecipients.push(currentReplyToSender);
+    }
+    
+    // Switch to compose tab
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.messaging-tabs .tab').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('compose-tab').classList.add('active');
+    document.querySelectorAll('.messaging-tabs .tab')[0].classList.add('active');
+    
+    // Set subject and update recipients display
+    const subject = document.getElementById('modal-subject').textContent;
+    document.getElementById('message-subject').value = subject.startsWith('Re: ') ? subject : 'Re: ' + subject;
+    updateSelectedRecipients();
+    document.getElementById('message-content').focus();
+}
+
+// Close message modal
+function closeMessageModal() {
+    document.getElementById('message-modal').classList.remove('show');
+}
+
+// Mark message as read
+function markAsRead(recipientId) {
+    fetch(`/api/mark-message-read/${recipientId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadInbox(); // Reload inbox to update unread status
+        }
+    });
+}
+
+// Update message counts
+function updateMessageCounts(unreadCount) {
+    document.getElementById('message-unread-count').textContent = unreadCount;
+    
+    const inboxCounter = document.getElementById('inbox-counter');
+    if (unreadCount > 0) {
+        inboxCounter.textContent = unreadCount;
+        inboxCounter.style.display = 'inline';
+    } else {
+        inboxCounter.style.display = 'none';
+    }
+}
+
+// Format date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) {
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } else if (days === 1) {
+        return 'Yesterday';
+    } else if (days < 7) {
+        return `${days} days ago`;
+    } else {
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load inbox initially
+    loadInbox();
+    
+    // Auto-refresh inbox every 30 seconds
+    setInterval(loadInbox, 30000);
+    
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.user-search-box')) {
+            document.getElementById('search-results').classList.remove('show');
+        }
+    });
+    
+    // Close modal when clicking outside
+    document.getElementById('message-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeMessageModal();
+        }
+    });
+});
+</script>
+
+{% endblock %}

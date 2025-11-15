@@ -11,6 +11,122 @@
   <!-- Bootstrap 5.3 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    .profile-picture-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .picture-preview {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      overflow: hidden;
+      margin: 0 auto 15px;
+      border: 4px solid #E31937;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .picture-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .picture-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+      color: white;
+      font-size: 48px;
+    }
+    
+    .upload-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    
+    .file-input-wrapper input[type=file] {
+      position: absolute;
+      left: -9999px;
+    }
+    
+    .file-input-label {
+      background: #E31937;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    
+    .file-input-label:hover {
+      background: #b8152c;
+    }
+    
+    .camera-button {
+      background: #17a2b8;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    
+    .camera-button:hover {
+      background: #138496;
+    }
+    
+    #video-container {
+      display: none;
+      margin-top: 15px;
+    }
+    
+    #video {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    #capture-button {
+      background: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
@@ -61,8 +177,44 @@
 {% endif %}
       <!-- Form Section -->
       <div class="form-box">
-        <form method="post" action="" novalidate>
+        <form method="post" action="" enctype="multipart/form-data" novalidate>
           {% csrf_token %}
+          
+          <!-- Profile Picture Section -->
+          <div class="profile-picture-section">
+            <h5 class="mb-3">Profile Picture (Optional)</h5>
+            <div class="picture-preview" id="preview-container">
+              <div class="picture-placeholder" id="preview-placeholder">
+                <i class="fas fa-user"></i>
+              </div>
+            </div>
+            
+            <div class="upload-buttons">
+              <div class="file-input-wrapper">
+                <input type="file" name="profile_picture" id="profile_picture" accept="image/*" onchange="previewImage(this)">
+                <label for="profile_picture" class="file-input-label">
+                  <i class="fas fa-upload"></i> Upload Photo
+                </label>
+              </div>
+              
+              <button type="button" class="camera-button" onclick="startCamera()">
+                <i class="fas fa-camera"></i> Take Photo
+              </button>
+            </div>
+            
+            <div id="video-container">
+              <video id="video" autoplay></video>
+              <br>
+              <button type="button" id="capture-button" onclick="capturePhoto()">
+                <i class="fas fa-camera"></i> Capture
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="stopCamera()" style="margin-left: 10px;">
+                Cancel
+              </button>
+            </div>
+            <canvas id="canvas" style="display: none;"></canvas>
+          </div>
+          
           <div class="row g-3">
             <div class="col-md-6 d-flex flex-column mb-3">
               <label class="form-label">FIRST NAME</label>
@@ -105,6 +257,9 @@
                 <option value="Electrical Maintenance Team" {% if request.POST.account_type == 'Electrical Maintenance Team' %}selected{% endif %}>Electrical Maintenance Team</option>
                 <option value="Mechanical Maintenance Team" {% if request.POST.account_type == 'Mechanical Maintenance Team' %}selected{% endif %}>Mechanical Maintenance Team</option>
                 <option value="Emergency Response Team" {% if request.POST.account_type == 'Emergency Response Team' %}selected{% endif %}>Emergency Response Team</option>
+                <option value="Security Team" {% if request.POST.account_type == 'Security Team' %}selected{% endif %}>Security Team</option>
+                <option value="Medical Team" {% if request.POST.account_type == 'Medical Team' %}selected{% endif %}>Medical Team</option>
+                <option value="Towing Service" {% if request.POST.account_type == 'Towing Service' %}selected{% endif %}>Towing Service</option>
                 <option value="Locomotive Specialists" {% if request.POST.account_type == 'Locomotive Specialists' %}selected{% endif %}>Locomotive Specialists</option>
               </select>
             </div>
@@ -121,6 +276,65 @@
 
   </div>
 </div>
+
+<script>
+  let stream = null;
+  
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const previewContainer = document.getElementById('preview-container');
+        previewContainer.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`;
+      };
+      
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+  
+  async function startCamera() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      document.getElementById('video-container').style.display = 'block';
+    } catch (error) {
+      alert('Unable to access camera: ' + error.message);
+    }
+  }
+  
+  function stopCamera() {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      document.getElementById('video-container').style.display = 'none';
+    }
+  }
+  
+  function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    canvas.toBlob(function(blob) {
+      const file = new File([blob], "captured_photo.jpg", { type: "image/jpeg" });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      document.getElementById('profile_picture').files = dataTransfer.files;
+      
+      // Preview the captured image
+      const previewContainer = document.getElementById('preview-container');
+      previewContainer.innerHTML = `<img src="${canvas.toDataURL()}" alt="Captured" style="width: 100%; height: 100%; object-fit: cover;">`;
+      
+      stopCamera();
+    }, 'image/jpeg');
+  }
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -18,13 +18,27 @@
                                                                                     <input type="hidden" name="selected_spec_id" value="" />
 
                                                                                     <div class="mb-3">
+                                                                                        <label class="form-label">Select Locomotive *</label>
+                                                                                        <select class="form-select" name="locomotive_id" required>
+                                                                                            <option value="" disabled selected>Select locomotive...</option>
+                                                                                            {% if locomotives %}
+                                                                                                {% for loco in locomotives %}
+                                                                                                    <option value="{{ loco.id }}">{{ loco.name }}</option>
+                                                                                                {% endfor %}
+                                                                                            {% else %}
+                                                                                                <option disabled>No locomotives available</option>
+                                                                                            {% endif %}
+                                                                                        </select>
+                                                                                    </div>
+
+                                                                                    <div class="mb-3">
                                                                                         <label class="form-label">Select Saved Preference</label>
                                                                                         <div class="input-group">
                                                                                             <select class="form-select" name="route_pref_select">
                                                                                                 <option value="" disabled selected>Select preference...</option>
                                                                                                 {% if prefs %}
                                                                                                     {% for p in prefs %}
-                                                                                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                                                                                        <option value="{{ p.id }}">{{ p.locomotive_name }} - {{ p.name }}</option>
                                                                                                     {% endfor %}
                                                                                                     <option disabled>──────────</option>
                                                                                                 {% endif %}
@@ -113,6 +127,7 @@
                                         <thead>
                                             <tr>
                                                 <th>ID</th>
+                                                <th>Locomotive</th>
                                                 <th>Preferred Route Corridor</th>
                                                 <th>Transshipment Required</th>
                                                 <th>Delivery Node</th>
@@ -124,6 +139,7 @@
                                             {% for p in prefs %}
                                             <tr>
                                                 <td>{{ p.id }}</td>
+                                                <td>{{ p.locomotive_name|default:"" }}</td>
                                                 <td>{{ p.name }}</td>
                                                 <td>{{ p.transshipment_required|default:"" }}</td>
                                                 <td>{{ p.delivery_node|default:"" }}</td>
@@ -133,7 +149,7 @@
                                                 </td>
                                             </tr>
                                             {% empty %}
-                                            <tr><td colspan="6">No saved preferences</td></tr>
+                                            <tr><td colspan="7">No saved preferences</td></tr>
                                             {% endfor %}
                                         </tbody>
                                     </table>
@@ -159,6 +175,7 @@
                                                         if (!data) return;
                                                         const set = (n,v) => { const el = document.querySelector('[name="'+n+'"]'); if (el) el.value = v || ''; };
                                                         const selIdEl = document.querySelector('[name="selected_spec_id"]'); if (selIdEl) selIdEl.value = data.id || '';
+                                                        set('locomotive_id', data.locomotive_id);
                                                         set('preferred_route_corridor', data.preferred_route_corridor);
                                                         set('transshipment_required', data.transshipment_required);
                                                         set('delivery_node', data.delivery_node);

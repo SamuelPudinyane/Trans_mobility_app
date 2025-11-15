@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Incident Heatmap - Crime Hotspot Analysis{% endblock %}
+
+{% block content %}
+<style>
+    .heatmap-container {
+        padding: 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .heatmap-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #E31937;
+    }
+    
+    .heatmap-header h1 {
+        color: #333;
+        margin: 0;
+        font-size: 28px;
+    }
+    
+    .filters-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-group label {
+        font-weight: 600;
+        margin-bottom: 5px;
+        font-size: 13px;
+        color: #333;
+    }
+    
+    .filter-group input,
+    .filter-group select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+    
+    .btn-filter {
+        background: linear-gradient(135deg, #E31937 0%, #a10d00 100%);
+        color: white;
+        padding: 10px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(227, 25, 55, 0.3);
+    }
+    
+    .btn-reset {
+        background: #6c757d;
+        color: white;
+        padding: 10px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .btn-reset:hover {
+        background: #5a6268;
+    }
+    
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        color: white;
+    }
+    
+    .stat-card.crime {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+    
+    .stat-card.safety {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    }
+    
+    .stat-card.mechanical {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    }
+    
+    .stat-card.other {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    }
+    
+    .stat-card h3 {
+        margin: 0;
+        font-size: 36px;
+        font-weight: 700;
+    }
+    
+    .stat-card p {
+        margin: 5px 0 0 0;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    #map {
+        width: 100%;
+        height: 600px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .legend {
+        background: white;
+        padding: 15px;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        font-size: 13px;
+    }
+    
+    .legend h4 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: #333;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 8px;
+        border: 2px solid rgba(0,0,0,0.2);
+    }
+    
+    .marker-popup {
+        min-width: 250px;
+    }
+    
+    .marker-popup h5 {
+        margin: 0 0 10px 0;
+        color: #E31937;
+        font-size: 16px;
+    }
+    
+    .marker-popup p {
+        margin: 5px 0;
+        font-size: 13px;
+    }
+    
+    .marker-popup .category-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-top: 5px;
+    }
+    
+    .category-badge.crime {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .category-badge.safety {
+        background-color: #ffc107;
+        color: #333;
+    }
+    
+    .category-badge.mechanical {
+        background-color: #17a2b8;
+        color: white;
+    }
+    
+    .category-badge.other {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .info-box {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+    
+    .info-box i {
+        color: #856404;
+        margin-right: 8px;
+    }
+</style>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Leaflet Heatmap Plugin CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js" />
+
+<div class="heatmap-container">
+    <div class="heatmap-header">
+        <h1><i class="fas fa-fire"></i> Incident Heatmap - Crime Hotspot Analysis</h1>
+    </div>
+    
+    <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        <strong>Crime Hotspot Analysis:</strong> This map analyzes driver incident descriptions to identify patterns and hotspots. 
+        Red zones indicate high concentration of incidents. Use filters to analyze specific incident types or time periods.
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="stats-cards">
+        <div class="stat-card crime">
+            <h3>{{ category_counts.crime }}</h3>
+            <p><i class="fas fa-exclamation-triangle"></i> Crime Related</p>
+        </div>
+        <div class="stat-card safety">
+            <h3>{{ category_counts.safety }}</h3>
+            <p><i class="fas fa-shield-alt"></i> Safety Issues</p>
+        </div>
+        <div class="stat-card mechanical">
+            <h3>{{ category_counts.mechanical }}</h3>
+            <p><i class="fas fa-wrench"></i> Mechanical</p>
+        </div>
+        <div class="stat-card other">
+            <h3>{{ category_counts.other }}</h3>
+            <p><i class="fas fa-ellipsis-h"></i> Other</p>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters-container">
+        <form method="GET" action="{% url 'incident_heatmap' %}" id="incidentFilterForm">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="start_date">Start Date</label>
+                    <input type="date" id="incident_start_date" name="start_date" value="{{ filters.start_date }}" onchange="validateIncidentDateRange();">
+                </div>
+                <div class="filter-group">
+                    <label for="end_date">End Date</label>
+                    <input type="date" id="incident_end_date" name="end_date" value="{{ filters.end_date }}" onchange="validateIncidentDateRange();">
+                </div>
+                <div class="filter-group">
+                    <label for="category">Incident Category</label>
+                    <select id="category" name="category">
+                        <option value="all" {% if filters.category == 'all' %}selected{% endif %}>All Categories</option>
+                        <option value="crime" {% if filters.category == 'crime' %}selected{% endif %}>Crime Related</option>
+                        <option value="safety" {% if filters.category == 'safety' %}selected{% endif %}>Safety Issues</option>
+                        <option value="mechanical" {% if filters.category == 'mechanical' %}selected{% endif %}>Mechanical</option>
+                        <option value="other" {% if filters.category == 'other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="locomotive">Locomotive</label>
+                    <select id="locomotive" name="locomotive">
+                        <option value="">All Locomotives</option>
+                        {% for loco in locomotives %}
+                        <option value="{{ loco.id }}" {% if filters.locomotive == loco.id|stringformat:"s" %}selected{% endif %}>
+                            {{ loco.locomotive }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-filter">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+                <a href="{% url 'incident_heatmap' %}" class="btn-reset" style="text-decoration: none; display: inline-flex; align-items: center;">
+                    <i class="fas fa-redo"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Map -->
+    <div id="map"></div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet Heatmap Plugin -->
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<script>
+    // Initialize map - centered on South Africa
+    const map = L.map('map').setView([-28.5, 24.5], 6);
+    
+    // Add OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18
+    }).addTo(map);
+    
+    // Incident data from Django
+    const incidents = {{ incidents|safe }};
+    
+    // Define marker colors by category
+    const categoryColors = {
+        'crime': '#dc3545',
+        'safety': '#ffc107',
+        'mechanical': '#17a2b8',
+        'other': '#6c757d'
+    };
+    
+    const categoryIcons = {
+        'crime': 'fa-exclamation-triangle',
+        'safety': 'fa-shield-alt',
+        'mechanical': 'fa-wrench',
+        'other': 'fa-map-marker-alt'
+    };
+    
+    // Create custom icon function
+    function createCustomIcon(category) {
+        const color = categoryColors[category] || categoryColors['other'];
+        return L.divIcon({
+            html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            className: 'custom-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+    }
+    
+    // Prepare data for heatmap
+    const heatmapData = [];
+    const markers = [];
+    
+    // Add markers and collect heatmap data
+    incidents.forEach(incident => {
+        // Add to heatmap data (lat, lng, intensity)
+        heatmapData.push([
+            incident.latitude,
+            incident.longitude,
+            1  // intensity
+        ]);
+        
+        // Create marker
+        const marker = L.marker([incident.latitude, incident.longitude], {
+            icon: createCustomIcon(incident.category)
+        });
+        
+        // Create popup content
+        const popupContent = `
+            <div class="marker-popup">
+                <h5><i class="fas ${categoryIcons[incident.category]}"></i> Incident #${incident.id}</h5>
+                <p><strong>Category:</strong> <span class="category-badge ${incident.category}">${incident.category}</span></p>
+                <p><strong>Description:</strong> ${incident.description || 'No description'}</p>
+                <p><strong>Locomotive:</strong> ${incident.locomotive}</p>
+                <p><strong>Reported by:</strong> ${incident.user}</p>
+                <p><strong>Date:</strong> ${incident.created_at}</p>
+                <p><strong>Status:</strong> ${incident.status}</p>
+                <p><strong>Priority:</strong> ${incident.priority}</p>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        markers.push(marker);
+    });
+    
+    // Add all markers to map
+    const markerLayer = L.layerGroup(markers).addTo(map);
+    
+    // Create heatmap layer
+    let heatmapLayer = null;
+    if (heatmapData.length > 0) {
+        heatmapLayer = L.heatLayer(heatmapData, {
+            radius: 25,
+            blur: 35,
+            maxZoom: 10,
+            max: 1.0,
+            gradient: {
+                0.0: 'blue',
+                0.3: 'cyan',
+                0.5: 'lime',
+                0.7: 'yellow',
+                0.9: 'orange',
+                1.0: 'red'
+            }
+        }).addTo(map);
+    }
+    
+    // Add layer control
+    const overlays = {
+        "Incident Markers": markerLayer
+    };
+    
+    if (heatmapLayer) {
+        overlays["Heatmap"] = heatmapLayer;
+    }
+    
+    L.control.layers(null, overlays).addTo(map);
+    
+    // Add legend
+    const legend = L.control({ position: 'bottomright' });
+    
+    legend.onAdd = function(map) {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = `
+            <h4>Incident Categories</h4>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${categoryColors.crime}"></div>
+                <span>Crime Related</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${categoryColors.safety}"></div>
+                <span>Safety Issues</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${categoryColors.mechanical}"></div>
+                <span>Mechanical</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: ${categoryColors.other}"></div>
+                <span>Other</span>
+            </div>
+        `;
+        return div;
+    };
+    
+    legend.addTo(map);
+    
+    // Auto-fit map to show all markers
+    if (markers.length > 0) {
+        const group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+    
+    console.log(`Loaded ${incidents.length} incidents on heatmap`);
+</script>
+
+<script>
+function validateIncidentDateRange() {
+    const startDate = document.getElementById('incident_start_date');
+    const endDate = document.getElementById('incident_end_date');
+    
+    if (startDate.value && endDate.value) {
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+        
+        if (end < start) {
+            alert('End date cannot be before start date. Please select a valid date range.');
+            endDate.value = '';
+            return false;
+        }
+    }
+    
+    // Submit form if dates are valid
+    document.getElementById('incidentFilterForm').submit();
+}
+</script>
+
+{% endblock %}

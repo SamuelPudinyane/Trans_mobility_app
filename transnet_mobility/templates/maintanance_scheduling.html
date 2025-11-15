@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Maintenance Scheduling{% endblock %}
+
+{% block content %}
+<style>
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.badge {
+    padding: 0.5em 0.75em;
+}
+
+/* Ensure content doesn't overlap sidebar */
+@media (min-width: 768px) {
+    .container-fluid {
+        margin-left: 0;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}
+
+/* Fix table responsiveness */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive table {
+    min-width: 100%;
+    width: max-content;
+}
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-wrench"></i> Maintenance Scheduling</h2>
+            <p class="text-muted">Schedule and manage maintenance for locomotives and wagons</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Schedules</h6>
+                            <h3 class="mb-0">{{ total_schedules }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-calendar-alt fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Scheduled</h6>
+                            <h3 class="mb-0">{{ scheduled_count }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">In Progress</h6>
+                            <h3 class="mb-0">{{ in_progress_count }}</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-tools fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Completed</h6>
+                            <h3 class="mb-0">{{ completed_count }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Type Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Locomotive Maintenance</h6>
+                            <h3 class="mb-0">{{ locomotive_maintenance_count }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-train fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Wagon Maintenance</h6>
+                            <h3 class="mb-0">{{ wagon_maintenance_count }}</h3>
+                        </div>
+                        <div class="bg-secondary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-subway fa-2x text-secondary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule New Maintenance Button -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#scheduleMaintenanceModal">
+                <i class="fas fa-plus-circle"></i> Schedule New Maintenance
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                        <option value="SCHEDULED" {% if status_filter == 'SCHEDULED' %}selected{% endif %}>Scheduled</option>
+                        <option value="IN_PROGRESS" {% if status_filter == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                        <option value="COMPLETED" {% if status_filter == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                        <option value="READY_FOR_ACTIVATION" {% if status_filter == 'READY_FOR_ACTIVATION' %}selected{% endif %}>Ready for Activation</option>
+                        <option value="ACTIVATED" {% if status_filter == 'ACTIVATED' %}selected{% endif %}>Activated</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="item_type" class="form-label">Item Type</label>
+                    <select name="item_type" id="item_type" class="form-select">
+                        <option value="all" {% if item_type_filter == 'all' %}selected{% endif %}>All Types</option>
+                        <option value="LOCOMOTIVE" {% if item_type_filter == 'LOCOMOTIVE' %}selected{% endif %}>Locomotive</option>
+                        <option value="WAGON" {% if item_type_filter == 'WAGON' %}selected{% endif %}>Wagon</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="sort_by" class="form-label">Sort By</label>
+                    <select name="sort_by" id="sort_by" class="form-select">
+                        <option value="scheduled_date" {% if sort_by == 'scheduled_date' %}selected{% endif %}>Scheduled Date (Newest)</option>
+                        <option value="expected_completion" {% if sort_by == 'expected_completion' %}selected{% endif %}>Expected Completion</option>
+                        <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Status</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'maintanance_scheduling' %}" class="btn btn-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Maintenance Schedules Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Maintenance Schedules</h5>
+        </div>
+        <div class="card-body">
+            <!-- Urgency Legend -->
+            <div class="alert alert-info mb-4" style="background-color: #e7f3ff; border: 1px solid #b3d9ff;">
+                <div style="font-weight: 600; margin-bottom: 10px;">
+                    <i class="fas fa-info-circle"></i> Maintenance Urgency Legend:
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <span style="background: #dc3545; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-exclamation-triangle"></i> CRITICAL (12+ months)
+                    </span>
+                    <span style="background: #fd7e14; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-exclamation"></i> HIGH (9-12 months)
+                    </span>
+                    <span style="background: #ffc107; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-minus-circle"></i> MEDIUM (6-9 months)
+                    </span>
+                    <span style="background: #90ee90; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-check-circle"></i> LOW (3-6 months)
+                    </span>
+                    <span style="background: #28a745; color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.85em; font-weight: 600;">
+                        <i class="fas fa-check-double"></i> GOOD (0-3 months)
+                    </span>
+                </div>
+            </div>
+            {% if maintenance_schedules %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Urgency</th>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Item</th>
+                            <th>Reason</th>
+                            <th>Last Maintenance</th>
+                            <th>Days Since</th>
+                            <th>Scheduled Date</th>
+                            <th>Expected Completion</th>
+                            <th>Status</th>
+                            <th>Scheduled By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in maintenance_schedules %}
+                        <tr style="border-left: 5px solid {{ schedule.urgency_color|default:'#6c757d' }};">
+                            <td>
+                                <span style="background-color: {{ schedule.urgency_color|default:'#6c757d' }}; color: white; padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.85em; display: inline-block;">
+                                    {{ schedule.urgency_level|default:'N/A' }}
+                                </span>
+                            </td>
+                            <td>{{ schedule.id }}</td>
+                            <td>
+                                {% if schedule.item_type == 'LOCOMOTIVE' %}
+                                    <span class="badge bg-primary"><i class="fas fa-train"></i> Locomotive</span>
+                                {% elif schedule.item_type == 'WAGON' %}
+                                    <span class="badge bg-secondary"><i class="fas fa-subway"></i> Wagon</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ schedule.item_type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if schedule.locomotive %}
+                                    {{ schedule.locomotive.locomotive }}
+                                {% elif schedule.wagon %}
+                                    {{ schedule.wagon.wagon_number }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span title="{{ schedule.reason }}">
+                                    {{ schedule.reason|truncatewords:10 }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if schedule.last_maintenance_date %}
+                                    {{ schedule.last_maintenance_date|date:"Y-m-d" }}
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if schedule.days_since_maintenance %}
+                                    <span style="font-weight: 600; color: {{ schedule.urgency_color }};">
+                                        {{ schedule.days_since_maintenance }} days
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ schedule.scheduled_date|date:"Y-m-d H:i" }}</td>
+                            <td>{{ schedule.expected_completion_date|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                {% if schedule.status == 'SCHEDULED' %}
+                                    <span class="badge bg-warning text-dark">Scheduled</span>
+                                {% elif schedule.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-info">In Progress</span>
+                                {% elif schedule.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif schedule.status == 'READY_FOR_ACTIVATION' %}
+                                    <span class="badge bg-primary">Ready for Activation</span>
+                                {% elif schedule.status == 'ACTIVATED' %}
+                                    <span class="badge bg-dark">Activated</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if schedule.scheduled_by %}
+                                    {{ schedule.scheduled_by.first_name }} {{ schedule.scheduled_by.last_name }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-info" onclick="viewDetails({{ schedule.id }})">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No maintenance schedules found. Click "Schedule New Maintenance" to create one.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Maintenance Modal -->
+<div class="modal fade" id="scheduleMaintenanceModal" tabindex="-1" aria-labelledby="scheduleMaintenanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="scheduleMaintenanceModalLabel">
+                    <i class="fas fa-calendar-plus"></i> Schedule New Maintenance
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="scheduleMaintenanceForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Item Type Selection -->
+                        <div class="col-md-6">
+                            <label for="item_type_select" class="form-label">Item Type <span class="text-danger">*</span></label>
+                            <select name="item_type" id="item_type_select" class="form-select" required onchange="toggleItemSelection()">
+                                <option value="">-- Select Type --</option>
+                                <option value="LOCOMOTIVE">Locomotive</option>
+                                <option value="WAGON">Wagon</option>
+                            </select>
+                        </div>
+
+                        <!-- Locomotive Selection (hidden by default) -->
+                        <div class="col-md-6" id="locomotive_selection" style="display:none;">
+                            <label for="locomotive_select" class="form-label">Select Locomotive <span class="text-danger">*</span></label>
+                            <select name="item_id" id="locomotive_select" class="form-select">
+                                <option value="">-- Select Locomotive --</option>
+                                {% for loco in available_locomotives %}
+                                <option value="{{ loco.id }}">{{ loco.locomotive }} ({{ loco.loc_class }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Wagon Selection (hidden by default) -->
+                        <div class="col-md-6" id="wagon_selection" style="display:none;">
+                            <label for="wagon_select" class="form-label">Select Wagon <span class="text-danger">*</span></label>
+                            <select name="item_id" id="wagon_select" class="form-select">
+                                <option value="">-- Select Wagon --</option>
+                                {% for wagon in available_wagons %}
+                                <option value="{{ wagon.id }}">{{ wagon.wagon_number }} ({{ wagon.get_wagon_type_display }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="col-12">
+                            <label for="reason" class="form-label">Maintenance Reason <span class="text-danger">*</span></label>
+                            <textarea name="reason" id="reason" class="form-control" rows="3" required placeholder="Describe the reason for maintenance..."></textarea>
+                        </div>
+
+                        <!-- Scheduled Date -->
+                        <div class="col-md-6">
+                            <label for="scheduled_date" class="form-label">Scheduled Date & Time <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="scheduled_date" id="scheduled_date" class="form-control" required>
+                        </div>
+
+                        <!-- Expected Completion Date -->
+                        <div class="col-md-6">
+                            <label for="expected_completion_date" class="form-label">Expected Completion <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="expected_completion_date" id="expected_completion_date" class="form-control" required>
+                        </div>
+
+                        <!-- Maintenance Notes -->
+                        <div class="col-12">
+                            <label for="maintenance_notes" class="form-label">Additional Notes</label>
+                            <textarea name="maintenance_notes" id="maintenance_notes" class="form-control" rows="3" placeholder="Any additional notes or instructions..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Schedule Maintenance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleItemSelection() {
+    const itemType = document.getElementById('item_type_select').value;
+    const locoDiv = document.getElementById('locomotive_selection');
+    const wagonDiv = document.getElementById('wagon_selection');
+    const locoSelect = document.getElementById('locomotive_select');
+    const wagonSelect = document.getElementById('wagon_select');
+    
+    if (itemType === 'LOCOMOTIVE') {
+        locoDiv.style.display = 'block';
+        wagonDiv.style.display = 'none';
+        locoSelect.required = true;
+        wagonSelect.required = false;
+        wagonSelect.value = '';
+    } else if (itemType === 'WAGON') {
+        locoDiv.style.display = 'none';
+        wagonDiv.style.display = 'block';
+        locoSelect.required = false;
+        wagonSelect.required = true;
+        locoSelect.value = '';
+    } else {
+        locoDiv.style.display = 'none';
+        wagonDiv.style.display = 'none';
+        locoSelect.required = false;
+        wagonSelect.required = false;
+    }
+}
+
+function viewDetails(scheduleId) {
+    // You can implement a detail view modal here
+    alert('View details for schedule ID: ' + scheduleId);
+}
+
+// Set minimum date to today for scheduled date
+document.addEventListener('DOMContentLoaded', function() {
+    const scheduledDateInput = document.getElementById('scheduled_date');
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    scheduledDateInput.min = minDateTime;
+    
+    // Update expected completion min when scheduled date changes
+    scheduledDateInput.addEventListener('change', function() {
+        const expectedCompletionInput = document.getElementById('expected_completion_date');
+        expectedCompletionInput.min = this.value;
+    });
+});
+</script>
+{% endblock %}
