@@ -5,6 +5,33 @@
 {% block content %}
 
 <style>
+        /* Horizontal scroll for performance cards */
+        .loco-scroll-container {
+            display: flex;
+               flex-direction: column;
+               overflow-y: auto;
+               max-height: 600px;
+               gap: 24px;
+            -webkit-overflow-scrolling: touch;
+        }
+            .loco-scroll-card {
+                width: 100%;
+                min-width: 340px;
+                max-width: 480px;
+                margin-bottom: 0;
+                box-shadow: 0 2px 8px rgba(40,0,0,0.07);
+                border-radius: 12px;
+                background: #fff;
+                transition: box-shadow 0.2s;
+                color: #222 !important;
+            }
+            .loco-scroll-card .card-title,
+            .loco-scroll-card .card-body,
+            .loco-scroll-card span,
+            .loco-scroll-card strong {
+                color: #222 !important;
+            }
+        }
     .assignment-container {
         max-width: 1400px;
         margin: 30px auto;
@@ -12,12 +39,12 @@
     }
     
     .page-header {
-        background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
+        background: #007bff;
         color: white;
         padding: 30px;
         border-radius: 12px;
         margin-bottom: 30px;
-        box-shadow: 0 4px 12px rgba(227, 25, 55, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
     }
     
     .page-header h1 {
@@ -29,42 +56,7 @@
     }
     
     .page-header p {
-        margin: 0;
-        opacity: 0.9;
-        font-size: 16px;
-    }
-    
-    .assignment-form-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 30px;
-        margin-bottom: 30px;
-    }
-    
-    .section-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 3px solid #E31937;
-    }
-    
-    .locomotive-select-group {
-        margin-bottom: 30px;
-    }
-    
-    .locomotive-select-group label {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 16px;
-    }
-    
+
     .form-select {
         padding: 12px;
         border: 2px solid #ddd;
@@ -80,127 +72,68 @@
     
     .wagons-table-container {
         margin-top: 20px;
-        border: 2px solid #f0f0f0;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    
-    .wagons-table {
-        margin: 0;
-    }
-    
-    .wagons-table thead {
-        background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
-        color: white;
-    }
-    
-    .wagons-table thead th {
-        padding: 15px;
-        font-weight: 600;
-        border: none;
-    }
-    
-    .wagons-table tbody tr {
-        border-bottom: 1px solid #f0f0f0;
-        transition: background-color 0.2s ease;
-    }
-    
-    .wagons-table tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-    
-    .wagons-table tbody td {
-        padding: 15px;
-        vertical-align: middle;
-    }
-    
-    .submit-btn {
-        background: linear-gradient(135deg, #E31937 0%, #b8152c 100%);
-        color: white;
-        border: none;
-        padding: 12px 40px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 16px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 20px;
-    }
-    
-    .submit-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(227, 25, 55, 0.3);
-    }
-    
-    .assignments-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        padding: 30px;
-    }
-    
-    .assignments-table {
-        margin: 0;
-    }
-    
-    .assignments-table thead {
-        background: #f8f9fa;
-    }
-    
-    .assignments-table thead th {
-        padding: 15px;
-        font-weight: 600;
-        color: #333;
-        border-bottom: 2px solid #E31937;
-    }
-    
-    .assignments-table tbody td {
-        padding: 15px;
-        vertical-align: middle;
-    }
-    
-    .unassign-btn {
-        background: #dc3545;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .unassign-btn:hover {
-        background: #c82333;
-        transform: translateY(-1px);
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: #999;
-    }
-    
-    .empty-state i {
-        font-size: 48px;
-        margin-bottom: 15px;
-        display: block;
-    }
-    
-    .badge {
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-    }
-    
-    /* Info icon tooltip styling */
-    .info-tooltip-icon {
-        cursor: help;
-        transition: all 0.2s ease;
+            <table class="assignments-table table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-train"></i> Locomotive(s)</th>
+                        <th><i class="fas fa-hashtag"></i> Assigned Wagons</th>
+                        <th><i class="fas fa-balance-scale"></i> Total Tare Weight</th>
+                        <th><i class="fas fa-weight-hanging"></i> Total Payload</th>
+                        <th><i class="fas fa-weight"></i> Total Weight</th>
+                        <th><i class="fas fa-calendar"></i> Assigned At</th>
+                        <th><i class="fas fa-user"></i> Assigned By</th>
+                        <th><i class="fas fa-cog"></i> Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group_key, group in group_assignments.items %}
+                    <tr>
+                        <td>
+                            <strong>
+                                {% if group.assignments|length > 0 %}
+                                    {{ group.assignments.0.locomotive_name }}
+                                {% else %}
+                                    &mdash;
+                                {% endif %}
+                            </strong>
+                        </td>
+                        <td>
+                            {% for assignment in group.assignments %}
+                                <span class="badge bg-secondary">{{ assignment.wagon_number }}</span>{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {{ group.total_tare|floatformat:2 }}t
+                        </td>
+                        <td>
+                            {{ group.total_payload|floatformat:2 }}t
+                        </td>
+                        <td>
+                            {{ group.total_weight|floatformat:2 }}t
+                        </td>
+                        <td>
+                            {% if group.assignments|length > 0 %}{{ group.assignments.0.assigned_at|date:"Y-m-d H:i" }}{% endif %}
+                        </td>
+                        <td>
+                            {% if group.assignments|length > 0 %}{{ group.assignments.0.assigned_by }}{% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                                <!-- Actions for this group (e.g., change, remove, etc.) -->
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                No assignments found.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         display: inline-block;
         position: relative;
     }
@@ -225,7 +158,7 @@
         max-width: 350px !important;
         padding: 12px 16px !important;
         text-align: left !important;
-        background-color: #2c3e50 !important;
+        /* background-color: #2c3e50 !important; */
         border-radius: 8px !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
         line-height: 1.5 !important;
@@ -255,16 +188,7 @@
             Assign Wagons to Locomotive
         </h1>
         <p>🚂 Assign wagons to locomotives before assigning drivers</p>
-                    <option value="" selected disabled>Choose a locomotive...</option>
-                    {% for loco in locomotives %}
-                        <option value="{{ loco.id }}">{{ loco.display_name }}</option>
-                    {% endfor %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+
 
     <!-- Locomotive Weight Summary -->
     {% if loco_summaries %}
@@ -276,24 +200,25 @@
         
         <!-- Locomotive Filter for Performance Analysis -->
         <div style="margin-bottom: 20px;">
-            <form method="GET" id="locomotivePerformanceFilterForm" style="display: flex; align-items: center; gap: 10px;">
+            <form method="GET" id="locomotivePerformanceFilterForm" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <label for="performanceLocomotiveFilter" style="font-weight: bold; margin-bottom: 0;">
                     <i class="fas fa-filter"></i> Filter by Locomotive:
                 </label>
                 <select name="locomotive" id="performanceLocomotiveFilter" onchange="this.form.submit()" 
-                        style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 250px;">
+                        style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 200px;">
                     <option value="">All Locomotives</option>
-                    {% for loco in locomotives_with_assignments %}
+                    {% for loco in locomotives_list %}
                     <option value="{{ loco.id }}" {% if locomotive_filter == loco.id|stringformat:"s" %}selected{% endif %}>
-                        {{ loco.locomotive }}
+                        {{ loco.display_name }}
                     </option>
                     {% endfor %}
                 </select>
-                
-                {% if locomotive_filter %}
-                <a href="?{% if request.GET.urlencode %}{{ request.GET.urlencode|slice:'' }}{% endif %}" 
-                   class="btn btn-secondary btn-sm" 
-                   style="padding: 8px 16px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px;">
+                <label for="dateFilter" style="font-weight: bold; margin-bottom: 0; margin-left: 20px;">
+                    <i class="fas fa-calendar"></i> Date:
+                </label>
+                <input type="date" name="date" id="dateFilter" value="{{ date_filter|default:'' }}" onchange="this.form.submit()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 150px;">
+                {% if locomotive_filter or date_filter %}
+                <a href="?" class="btn btn-secondary btn-sm" style="padding: 8px 16px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px;">
                     <i class="fas fa-times"></i> Clear Filter
                 </a>
                 {% endif %}
@@ -301,12 +226,25 @@
         </div>
         
         <div class="row">
+            <div class="loco-scroll-container">
             {% for loco_id, summary in loco_summaries.items %}
-            <div class="col-12 mb-4">
-                <div class="card h-100" style="border-left: 5px solid {% if summary.can_handle_status == 'optimal' %}#28a745{% elif summary.can_handle_status == 'marginal' or summary.can_handle_status == 'warning' %}#ffc107{% else %}#dc3545{% endif %};">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-title mb-0"><i class="fas fa-train"></i> {{ summary.name }}</h5>
+                <div class="loco-scroll-card">
+                    <div class="card h-100" style="border-left: 5px solid {% if summary.can_handle_status == 'optimal' %}#28a745{% elif summary.can_handle_status == 'marginal' or summary.can_handle_status == 'warning' %}#ffc107{% else %}#dc3545{% endif %};">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                
+                                <span class="text-muted" style="font-size: 1rem; font-weight: 500;">Locomotive Name(s): 
+                                    <span style="color: #E31937; font-weight: bold;">
+                                        {% for loco in locomotives_list %}
+                                            {% if loco.id == loco_id %}
+                                                {% for n in loco.names %}
+                                                    <span style="margin-right: 8px;">{{ n }}</span>
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                </span>
+                            </div>
                             {% if summary.can_handle_status %}
                             <span class="badge {% if summary.can_handle_status == 'optimal' %}bg-success{% elif summary.can_handle_status == 'marginal' or summary.can_handle_status == 'warning' %}bg-warning{% else %}bg-danger{% endif %} ms-2"
                                   data-bs-toggle="tooltip" 
@@ -317,170 +255,169 @@
                                 {{ summary.can_handle_message }}
                             </span>
                             {% endif %}
-                        </div>
                         
-                        <!-- Load Summary -->
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <div class="p-2 bg-light rounded">
-                                    <small class="text-muted d-block">
-                                        <i class="fas fa-link"></i> Wagons
+                            <!-- Load Summary -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="p-2 bg-light rounded">
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-link"></i> Wagons
+                                            <i class="fas fa-info-circle text-secondary ms-1" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top" 
+                                               title="Total number of wagons currently assigned to this locomotive. Each wagon adds to the total weight and affects performance."
+                                               style="cursor: help; font-size: 0.75rem;"></i>
+                                        </small>
+                                        <strong class="fs-5">{{ summary.wagon_count }}</strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 bg-light rounded">
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-weight"></i> Total Weight
+                                            <i class="fas fa-info-circle text-secondary ms-1" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top" 
+                                               title="Combined weight of all assigned wagons (tons). Includes both tare weight (empty wagon weight) and payload capacity (cargo weight). This total directly impacts power requirements."
+                                               style="cursor: help; font-size: 0.75rem;"></i>
+                                        </small>
+                                        <strong class="fs-5">{{ summary.total_weight|floatformat:1 }}t</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        
+                            <!-- Weight Capacity Bar -->
+                            {% if summary.capacity %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>
+                                        <i class="fas fa-balance-scale"></i> Weight Capacity
                                         <i class="fas fa-info-circle text-secondary ms-1" 
                                            data-bs-toggle="tooltip" 
                                            data-bs-placement="top" 
-                                           title="Total number of wagons currently assigned to this locomotive. Each wagon adds to the total weight and affects performance."
+                                           title="Percentage of locomotive's maximum hauling capacity being used. Color-coded: Green (0-70%) = Safe | Blue (70-90%) = Moderate | Yellow (90-100%) = Near Limit | Red (>100%) = Overloaded"
                                            style="cursor: help; font-size: 0.75rem;"></i>
                                     </small>
-                                    <strong class="fs-5">{{ summary.wagon_count }}</strong>
+                                    <small><strong>{{ summary.total_weight|floatformat:1 }} / {{ summary.capacity|floatformat:0 }} tons</strong></small>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar {% if summary.capacity_used_percent > 100 %}bg-danger{% elif summary.capacity_used_percent > 90 %}bg-warning text-dark{% elif summary.capacity_used_percent > 70 %}bg-info text-dark{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ summary.capacity_used_percent|floatformat:0 }}%; color: #222; font-weight: bold;" 
+                                         aria-valuenow="{{ summary.capacity_used_percent|floatformat:0 }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        <strong>{{ summary.capacity_used_percent|floatformat:1 }}%</strong>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-6">
-                                <div class="p-2 bg-light rounded">
+                            {% endif %}
+                        
+                            <!-- Power Analysis -->
+                            {% if summary.loco_power_hp %}
+                            <div class="border-top pt-3 mt-3">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-bolt"></i> Power Analysis
+                                    <i class="fas fa-info-circle text-info ms-2" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Comprehensive analysis of locomotive power output and requirements based on load weight and terrain conditions"
+                                       style="cursor: help; font-size: 0.9rem;"></i>
+                                </h6>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <div class="p-2 bg-light rounded text-center">
+                                            <small class="text-muted d-block">
+                                                Locomotive Power
+                                                <i class="fas fa-info-circle text-primary ms-1" 
+                                                   data-bs-toggle="tooltip" 
+                                                   data-bs-placement="top" 
+                                                   title="Total horsepower (HP) generated by the locomotive engine. Calculated from tractive effort: Power = (Tractive Effort × 745.7) / 33. Higher HP means more pulling capability."
+                                                   style="cursor: help; font-size: 0.75rem;"></i>
+                                            </small>
+                                            <strong class="text-primary">{{ summary.loco_power_hp|floatformat:0 }} HP</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 bg-light rounded text-center">
+                                            <small class="text-muted d-block">
+                                                Tractive Effort
+                                                <i class="fas fa-info-circle text-info ms-1" 
+                                                   data-bs-toggle="tooltip" 
+                                                   data-bs-placement="top" 
+                                                   title="The pulling force (in kilonewtons) that the locomotive can exert at the rail. This is the primary measure of a locomotive's pulling strength. Higher kN = stronger locomotive."
+                                                   style="cursor: help; font-size: 0.75rem;"></i>
+                                            </small>
+                                            <strong class="text-info">{{ summary.tractive_effort|floatformat:0 }} kN</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <div class="p-2 bg-warning bg-opacity-10 rounded text-center">
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-road"></i> Required (Flat)
+                                                <i class="fas fa-info-circle text-warning ms-1" 
+                                                   data-bs-toggle="tooltip" 
+                                                   data-bs-placement="top" 
+                                                   title="Power needed to move this load on flat, level terrain. Calculated at 1 HP per ton of total weight. This represents ideal conditions with no inclines or resistance."
+                                                   style="cursor: help; font-size: 0.75rem;"></i>
+                                            </small>
+                                            <strong>{{ summary.power_required_flat|floatformat:0 }} HP</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 bg-danger bg-opacity-10 rounded text-center">
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-mountain"></i> Required (Grade)
+                                                <i class="fas fa-info-circle text-danger ms-1" 
+                                                   data-bs-toggle="tooltip" 
+                                                   data-bs-placement="top" 
+                                                   title="Power needed to move this load on uphill grades/inclines. Calculated at 3.5 HP per ton. Represents challenging terrain with steep gradients where significantly more power is required."
+                                                   style="cursor: help; font-size: 0.75rem;"></i>
+                                            </small>
+                                            <strong>{{ summary.power_required_grade|floatformat:0 }} HP</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if summary.power_to_weight %}
+                                <div class="p-2 bg-primary bg-opacity-10 rounded text-center mt-2">
                                     <small class="text-muted d-block">
-                                        <i class="fas fa-weight"></i> Total Weight
-                                        <i class="fas fa-info-circle text-secondary ms-1" 
+                                        Power-to-Weight Ratio
+                                        <i class="fas fa-info-circle text-primary ms-1" 
                                            data-bs-toggle="tooltip" 
                                            data-bs-placement="top" 
-                                           title="Combined weight of all assigned wagons (tons). Includes both tare weight (empty wagon weight) and payload capacity (cargo weight). This total directly impacts power requirements."
+                                           title="Critical performance metric showing horsepower available per ton of load (HP/ton). Higher ratios mean better performance: ≥3 HP/ton = Excellent for steep grades | ≥2 HP/ton = Good for moderate terrain | ≥1 HP/ton = Adequate for flat terrain | <1 HP/ton = Underpowered, may struggle"
                                            style="cursor: help; font-size: 0.75rem;"></i>
                                     </small>
-                                    <strong class="fs-5">{{ summary.total_weight|floatformat:1 }}t</strong>
+                                    <strong class="text-primary fs-5">{{ summary.power_to_weight|floatformat:2 }} HP/ton</strong>
+                                    <br>
+                                    <small class="text-muted fst-italic">
+                                        {% if summary.power_to_weight >= 3 %}Excellent for steep grades
+                                        {% elif summary.power_to_weight >= 2 %}Good for moderate grades
+                                        {% elif summary.power_to_weight >= 1 %}Adequate for flat terrain
+                                        {% else %}May struggle with load{% endif %}
+                                    </small>
                                 </div>
+                                {% endif %}
                             </div>
-                        </div>
-                        
-                        <!-- Weight Capacity Bar -->
-                        {% if summary.capacity %}
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <small>
-                                    <i class="fas fa-balance-scale"></i> Weight Capacity
-                                    <i class="fas fa-info-circle text-secondary ms-1" 
-                                       data-bs-toggle="tooltip" 
-                                       data-bs-placement="top" 
-                                       title="Percentage of locomotive's maximum hauling capacity being used. Color-coded: Green (0-70%) = Safe | Blue (70-90%) = Moderate | Yellow (90-100%) = Near Limit | Red (>100%) = Overloaded"
-                                       style="cursor: help; font-size: 0.75rem;"></i>
-                                </small>
-                                <small><strong>{{ summary.total_weight|floatformat:1 }} / {{ summary.capacity|floatformat:0 }} tons</strong></small>
-                            </div>
-                            <div class="progress" style="height: 25px;">
-                                <div class="progress-bar {% if summary.capacity_used_percent > 100 %}bg-danger{% elif summary.capacity_used_percent > 90 %}bg-warning{% elif summary.capacity_used_percent > 70 %}bg-info{% else %}bg-success{% endif %}" 
-                                     role="progressbar" 
-                                     style="width: {{ summary.capacity_used_percent|floatformat:0 }}%;" 
-                                     aria-valuenow="{{ summary.capacity_used_percent|floatformat:0 }}" 
-                                     aria-valuemin="0" 
-                                     aria-valuemax="100">
-                                    <strong>{{ summary.capacity_used_percent|floatformat:1 }}%</strong>
+                            {% else %}
+                            <div class="border-top pt-3 mt-3">
+                                <div class="alert alert-warning mb-0" role="alert">
+                                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Missing Locomotive Specifications</h6>
+                                    <p class="mb-2">Cannot calculate power requirements. Please update locomotive specifications with:</p>
+                                    <ul class="mb-0 small">
+                                        <li><strong>Tractive Effort</strong> (in kN) - e.g., 500, 750, 1000</li>
+                                        <li><strong>Capacity</strong> (in tons) - e.g., 5000, 7500, 10000</li>
+                                    </ul>
+                                    <hr>
+                                    <p class="mb-0 small"><i class="fas fa-lightbulb"></i> Go to <strong>Locomotive Configuration</strong> to edit specifications.</p>
                                 </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Power Analysis -->
-                        {% if summary.loco_power_hp %}
-                        <div class="border-top pt-3 mt-3">
-                            <h6 class="mb-3">
-                                <i class="fas fa-bolt"></i> Power Analysis
-                                <i class="fas fa-info-circle text-info ms-2" 
-                                   data-bs-toggle="tooltip" 
-                                   data-bs-placement="top" 
-                                   title="Comprehensive analysis of locomotive power output and requirements based on load weight and terrain conditions"
-                                   style="cursor: help; font-size: 0.9rem;"></i>
-                            </h6>
-                            <div class="row g-2 mb-2">
-                                <div class="col-6">
-                                    <div class="p-2 bg-light rounded text-center">
-                                        <small class="text-muted d-block">
-                                            Locomotive Power
-                                            <i class="fas fa-info-circle text-primary ms-1" 
-                                               data-bs-toggle="tooltip" 
-                                               data-bs-placement="top" 
-                                               title="Total horsepower (HP) generated by the locomotive engine. Calculated from tractive effort: Power = (Tractive Effort × 745.7) / 33. Higher HP means more pulling capability."
-                                               style="cursor: help; font-size: 0.75rem;"></i>
-                                        </small>
-                                        <strong class="text-primary">{{ summary.loco_power_hp|floatformat:0 }} HP</strong>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="p-2 bg-light rounded text-center">
-                                        <small class="text-muted d-block">
-                                            Tractive Effort
-                                            <i class="fas fa-info-circle text-info ms-1" 
-                                               data-bs-toggle="tooltip" 
-                                               data-bs-placement="top" 
-                                               title="The pulling force (in kilonewtons) that the locomotive can exert at the rail. This is the primary measure of a locomotive's pulling strength. Higher kN = stronger locomotive."
-                                               style="cursor: help; font-size: 0.75rem;"></i>
-                                        </small>
-                                        <strong class="text-info">{{ summary.tractive_effort|floatformat:0 }} kN</strong>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-2">
-                                <div class="col-6">
-                                    <div class="p-2 bg-warning bg-opacity-10 rounded text-center">
-                                        <small class="text-muted d-block">
-                                            <i class="fas fa-road"></i> Required (Flat)
-                                            <i class="fas fa-info-circle text-warning ms-1" 
-                                               data-bs-toggle="tooltip" 
-                                               data-bs-placement="top" 
-                                               title="Power needed to move this load on flat, level terrain. Calculated at 1 HP per ton of total weight. This represents ideal conditions with no inclines or resistance."
-                                               style="cursor: help; font-size: 0.75rem;"></i>
-                                        </small>
-                                        <strong>{{ summary.power_required_flat|floatformat:0 }} HP</strong>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="p-2 bg-danger bg-opacity-10 rounded text-center">
-                                        <small class="text-muted d-block">
-                                            <i class="fas fa-mountain"></i> Required (Grade)
-                                            <i class="fas fa-info-circle text-danger ms-1" 
-                                               data-bs-toggle="tooltip" 
-                                               data-bs-placement="top" 
-                                               title="Power needed to move this load on uphill grades/inclines. Calculated at 3.5 HP per ton. Represents challenging terrain with steep gradients where significantly more power is required."
-                                               style="cursor: help; font-size: 0.75rem;"></i>
-                                        </small>
-                                        <strong>{{ summary.power_required_grade|floatformat:0 }} HP</strong>
-                                    </div>
-                                </div>
-                            </div>
-                            {% if summary.power_to_weight %}
-                            <div class="p-2 bg-primary bg-opacity-10 rounded text-center mt-2">
-                                <small class="text-muted d-block">
-                                    Power-to-Weight Ratio
-                                    <i class="fas fa-info-circle text-primary ms-1" 
-                                       data-bs-toggle="tooltip" 
-                                       data-bs-placement="top" 
-                                       title="Critical performance metric showing horsepower available per ton of load (HP/ton). Higher ratios mean better performance: ≥3 HP/ton = Excellent for steep grades | ≥2 HP/ton = Good for moderate terrain | ≥1 HP/ton = Adequate for flat terrain | <1 HP/ton = Underpowered, may struggle"
-                                       style="cursor: help; font-size: 0.75rem;"></i>
-                                </small>
-                                <strong class="text-primary fs-5">{{ summary.power_to_weight|floatformat:2 }} HP/ton</strong>
-                                <br>
-                                <small class="text-muted fst-italic">
-                                    {% if summary.power_to_weight >= 3 %}Excellent for steep grades
-                                    {% elif summary.power_to_weight >= 2 %}Good for moderate grades
-                                    {% elif summary.power_to_weight >= 1 %}Adequate for flat terrain
-                                    {% else %}May struggle with load{% endif %}
-                                </small>
                             </div>
                             {% endif %}
                         </div>
-                        {% else %}
-                        <div class="border-top pt-3 mt-3">
-                            <div class="alert alert-warning mb-0" role="alert">
-                                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Missing Locomotive Specifications</h6>
-                                <p class="mb-2">Cannot calculate power requirements. Please update locomotive specifications with:</p>
-                                <ul class="mb-0 small">
-                                    <li><strong>Tractive Effort</strong> (in kN) - e.g., 500, 750, 1000</li>
-                                    <li><strong>Capacity</strong> (in tons) - e.g., 5000, 7500, 10000</li>
-                                </ul>
-                                <hr>
-                                <p class="mb-0 small"><i class="fas fa-lightbulb"></i> Go to <strong>Locomotive Configuration</strong> to edit specifications.</p>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
-            </div>
             {% endfor %}
         </div>
     </div>
@@ -504,7 +441,7 @@
                 </label>
                 <select class="form-select" id="locomotiveSelect" name="locomotive_id" required>
                     <option value="" selected disabled>Choose a locomotive...</option>
-                    {% for loco in locomotives %}
+                    {% for loco in locomotives_list %}
                         <option value="{{ loco.id }}">{{ loco.display_name }}</option>
                     {% endfor %}
                 </select>
@@ -577,9 +514,9 @@
                 <select name="locomotive" id="locomotiveFilter" onchange="this.form.submit()" 
                         style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 250px;">
                     <option value="">All Locomotives</option>
-                    {% for loco in locomotives_with_assignments %}
+                    {% for loco in locomotives_list %}
                     <option value="{{ loco.id }}" {% if locomotive_filter == loco.id|stringformat:"s" %}selected{% endif %}>
-                        {{ loco.locomotive }}
+                        {{ loco.display_name }}
                     </option>
                     {% endfor %}
                 </select>
@@ -623,14 +560,86 @@
                         <td>{{ assignment.assigned_at|date:"Y-m-d H:i" }}</td>
                         <td>{{ assignment.assigned_by }}</td>
                         <td>
-                            <form method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to unassign this wagon?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="unassign">
-                                <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
-                                <button type="submit" class="unassign-btn">
-                                    <i class="fas fa-unlink"></i> Unassign
-                                </button>
-                            </form>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                                <form method="post" style="margin: 0;" onsubmit="return confirm('Are you sure you want to unassign this wagon?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="unassign">
+                                    <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                    <button type="submit" class="unassign-btn">
+                                        <i class="fas fa-unlink"></i> Unassign
+                                    </button>
+                                </form>
+                                                                <!-- Locomotive change modal trigger -->
+                                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#changeLocoModal{{ assignment.id }}">
+                                                                        <i class="fas fa-exchange-alt"></i> Change
+                                                                </button>
+
+                                                                                                                                <!-- Modal for changing locomotive (multi-loco support) -->
+                                                                                                                                <div class="modal fade" id="changeLocoModal{{ assignment.id }}" tabindex="-1" aria-labelledby="changeLocoModalLabel{{ assignment.id }}" aria-hidden="true">
+                                                                                                                                    <div class="modal-dialog modal-dialog-centered">
+                                                                                                                                        <div class="modal-content">
+                                                                                                                                            <div class="modal-header">
+                                                                                                                                                <h5 class="modal-title" id="changeLocoModalLabel{{ assignment.id }}">Change Locomotive Assignment</h5>
+                                                                                                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                                                                            </div>
+                                                                                                                                            <form method="post">
+                                                                                                                                                <div class="modal-body">
+                                                                                                                                                    {% csrf_token %}
+                                                                                                                                                    <input type="hidden" name="action" value="reassign">
+                                                                                                                                                    <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                                                                                                                                    <div class="table-responsive">
+                                                                                                                                                        <table class="table table-bordered align-middle">
+                                                                                                                                                            <thead>
+                                                                                                                                                                <tr>
+                                                                                                                                                                    <th>Current Locomotive</th>
+                                                                                                                                                                    <th>Replace With</th>
+                                                                                                                                                                </tr>
+                                                                                                                                                            </thead>
+                                                                                                                                                            <tbody>
+                                                                                                                                                                {% for loco in assignment.locomotive_names %}
+                                                                                                                                                                <tr>
+                                                                                                                                                                    <td>
+                                                                                                                                                                        <strong>{{ loco.name }}</strong><br>
+                                                                                                                                                                        <span class="text-muted">Power: {{ loco.power|default:'N/A' }}</span>
+                                                                                                                                                                        <input type="hidden" name="current_loco_ids" value="{{ loco.id }}">
+                                                                                                                                                                    </td>
+                                                                                                                                                                    <td>
+                                                                                                                                                                        <select name="replace_loco_ids_{{ loco.id }}" class="form-select">
+                                                                                                                                                                            <option value="{{ loco.id }}">Keep ({{ loco.name }})</option>
+                                                                                                                                                                            {% for available in assignment.available_locomotives %}
+                                                                                                                                                                                {% if available.id != loco.id %}
+                                                                                                                                                                                    <option value="{{ available.id }}">{{ available.name }} (Power: {{ available.power|default:'N/A' }})</option>
+                                                                                                                                                                                {% endif %}
+                                                                                                                                                                            {% endfor %}
+                                                                                                                                                                        </select>
+                                                                                                                                                                    </td>
+                                                                                                                                                                </tr>
+                                                                                                                                                                {% endfor %}
+                                                                                                                                                            </tbody>
+                                                                                                                                                        </table>
+                                                                                                                                                    </div>
+                                                                                                                                                    <div class="alert alert-info">
+                                                                                                                                                        <strong>Tip:</strong> Only change the dropdown if you want to replace a locomotive. Unchanged rows will keep their current locomotive.
+                                                                                                                                                    </div>
+                                                                                                                                                </div>
+                                                                                                                                                <div class="modal-footer">
+                                                                                                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                                                                                                    <button type="submit" class="btn btn-primary">Confirm Change</button>
+                                                                                                                                                </div>
+                                                                                                                                            </form>
+                                                                                                                                        </div>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                <!-- Locomotive remove form -->
+                                <form method="post" style="margin: 0;" onsubmit="return confirm('Remove this locomotive from the assignment?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="remove_locomotive">
+                                    <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash-alt"></i> Remove
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}

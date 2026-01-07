@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
@@ -4336,6 +4337,18 @@ def api_get_route_preference_spec(request):
 
 @login_required
 def driver_assignment(request):
+    # AJAX endpoint for dynamic date filtering
+    if request.method == 'GET' and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        selected_driver_ids = request.GET.getlist('driver_ids[]') or request.GET.getlist('driver_ids')
+        today = timezone.now().date()
+        filtered_dates = []
+        if selected_driver_ids:
+            filtered_dates = list(Schedule.objects.filter(
+                driver_id__in=selected_driver_ids,
+                date__gte=today
+            ).values_list('date', flat=True).distinct().order_by('date'))
+        return JsonResponse({'dates': filtered_dates})
+
     account_type = request.session.get('account_type')
     if account_type != "ADMIN":
         return redirect('login')
@@ -4485,8 +4498,22 @@ def driver_assignment(request):
             messages.success(request, f'Drivers and assistant assigned to locomotive(s) for {selected_date}.')
             return redirect('driver_assignment')
 
-    # Collect all scheduled dates for available drivers
-    available_dates = Schedule.objects.filter(driver__in=[d.User_id for d in available_drivers], date__gte=today).values_list('date', flat=True).distinct().order_by('date')
+    # --- Filter available_dates based on selected drivers (pair) ---
+    selected_driver_ids = request.GET.getlist('driver_ids')
+    filtered_dates = []
+    if selected_driver_ids:
+        # Only show dates for the selected drivers (pair), from today onwards
+        filtered_dates = Schedule.objects.filter(
+            driver_id__in=selected_driver_ids,
+            date__gte=today
+        ).values_list('date', flat=True).distinct().order_by('date')
+    else:
+        # Default: show all available drivers' future dates
+        filtered_dates = Schedule.objects.filter(
+            driver__in=[d.User_id for d in available_drivers],
+            date__gte=today
+        ).values_list('date', flat=True).distinct().order_by('date')
+
     # Collect available assistants (not already assigned for the selected date)
     assigned_assistant_ids = Schedule.objects.filter(date__gte=today, assistant__isnull=False).values_list('assistant_id', flat=True)
     available_assistants = CustomUser.objects.filter(role='DRIVER', driver_status='available').exclude(User_id__in=assigned_assistant_ids)
@@ -4496,7 +4523,7 @@ def driver_assignment(request):
         'locomotives': locomotives,
         'assignments': assignment_list,
         'paired_driver_ids': list(paired_driver_ids),
-        'available_dates': available_dates,
+        'available_dates': filtered_dates,
         'available_assistants': available_assistants,
     })
 
@@ -4511,115 +4538,155 @@ def count_assigned_drivers(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+
 @login_required
 def locomotive_wagon_assignment(request):
-    """Admin interface to assign wagons to locomotives"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'remove_locomotive':
+            assignment_id = request.POST.get('assignment_id')
+            if assignment_id:
+                try:
+                    assignment = LocomotiveWagonAssignment.objects.get(id=int(assignment_id))
+                    assignment.delete()
+                    # Optionally, update wagon status if needed
+                    wagon = assignment.wagon
+                    wagon.is_assigned = False
+                    wagon.status = 'AVAILABLE'
+                    wagon.is_active = True
+                    wagon.save()
+                    messages.success(request, f'Locomotive removed from wagon {wagon.wagon_number}.')
+                except Exception as e:
+                    messages.error(request, f'Failed to remove locomotive: {e}')
+            else:
+                messages.error(request, 'Missing assignment selection.')
+            return redirect('locomotive_wagon_assignment')
+        # ...other POST actions (assign, unassign, reassign) go here...
+
+    # """Admin interface to assign wagons to locomotives"""
     account_type = request.session.get('account_type')
     if account_type != "ADMIN":
         return redirect('login')
 
     from .models import LocomotiveWagonAssignment
-    
-    # Get locomotive filter parameter
-    locomotive_filter = request.GET.get('locomotive', '')
-    
-    # Only include locomotives assigned to a pair of drivers (at least two assignments with status 'assigned')
-    from django.db.models import Count
-    # Only locomotives with exactly two active driver assignments (status='assigned')
-    assigned_loco_ids = (
-        LocomotiveAssignment.objects.filter(status='assigned')
-        .values('locomotive')
-        .annotate(driver_count=Count('id', distinct=True))
-        .filter(driver_count=2)
-        .values_list('locomotive', flat=True)
-    )
-    # Build a list of locomotive display objects for the dropdown
-    locomotives_qs = LocomotiveSpec.objects.filter(
-        maintenance_status='OPERATIONAL',
-        id__in=assigned_loco_ids
-    ).exclude(
-        locomotive__isnull=True
-    ).exclude(
-        locomotive__exact=''
-    ).order_by('locomotive')
+    from django.db.models import Sum
+    # Locomotive Performance Analysis (loco_summaries)
+    loco_summaries = {}
+    assigned_loco_ids = LocomotiveWagonAssignment.objects.values_list('locomotive_id', flat=True).distinct()
+    for loco in LocomotiveSpec.objects.filter(id__in=assigned_loco_ids):
+        assigned_wagons = LocomotiveWagonAssignment.objects.filter(locomotive=loco).select_related('wagon')
+        wagon_count = assigned_wagons.count()
+        total_weight = 0
+        for a in assigned_wagons:
+            w = a.wagon
+            tare = float(w.tare_weight or 0)
+            payload = float(w.payload_capacity or 0)
+            total_weight += tare + payload
+        try:
+            capacity = float(loco.capacity_in_tons) if loco.capacity_in_tons else None
+        except (ValueError, TypeError):
+            capacity = None
+        loco_power_hp = float(getattr(loco, 'tractive_effort', 0)) * 745.7 / 33 if getattr(loco, 'tractive_effort', None) else None
+        tractive_effort = float(getattr(loco, 'tractive_effort', 0)) if getattr(loco, 'tractive_effort', None) else None
+        power_required_flat = total_weight if total_weight else 0
+        power_required_grade = total_weight * 3 if total_weight else 0
+        power_to_weight = (loco_power_hp / total_weight) if (loco_power_hp and total_weight) else None
+        capacity_used_percent = (total_weight / capacity * 100) if (capacity and total_weight) else 0
+        if capacity is not None and total_weight > capacity:
+            can_handle_status = 'critical'
+            can_handle_message = 'Overloaded!'
+        elif capacity is not None and total_weight > 0.9 * capacity:
+            can_handle_status = 'warning'
+            can_handle_message = 'Near limit'
+        elif capacity is not None:
+            can_handle_status = 'optimal'
+            can_handle_message = 'OK'
+        else:
+            can_handle_status = 'unknown'
+            can_handle_message = 'No capacity info'
+        loco_summaries[loco.id] = {
+            'name': loco.locomotive,
+            'wagon_count': wagon_count,
+            'total_weight': total_weight,
+            'capacity': capacity,
+            'capacity_used_percent': capacity_used_percent,
+            'can_handle_status': can_handle_status,
+            'can_handle_message': can_handle_message,
+            'loco_power_hp': loco_power_hp,
+            'tractive_effort': tractive_effort,
+            'power_required_flat': power_required_flat,
+            'power_required_grade': power_required_grade,
+            'power_to_weight': power_to_weight,
+        }
 
-    # Group by assignment: if multiple locomotives are assigned together (same driver pair), show as comma-separated
-    # For now, just show the name, but if a locomotive is assigned to the same driver pair, group them
-    # This is a simplification: in real multi-head, there should be a group id or schedule id
-    # We'll group by driver pairs (set of driver+assistant ids) for all assignments with status 'assigned'
+
+    # --- Dropdown and assignment logic ---
     from collections import defaultdict
+    from django.utils import timezone
+    today = timezone.now().date()
+    # Date filter support
+    date_filter = request.GET.get('date', '')
+    schedule_filter_kwargs = {
+        'date__gte': today,
+        'driver__isnull': False,
+        'assistant__isnull': False,
+        'locomotives__isnull': False,
+    }
+    if date_filter:
+        schedule_filter_kwargs['date'] = date_filter
+    schedules = Schedule.objects.filter(**schedule_filter_kwargs).distinct().prefetch_related('locomotives', 'driver', 'assistant')
     driver_pair_to_loco_ids = defaultdict(list)
     driver_pair_to_loco_names = defaultdict(list)
-    for assignment in LocomotiveAssignment.objects.filter(status='assigned'):
-        # Use tuple of sorted driver and assistant ids as key
-        driver_ids = [assignment.driver_id]
-        if assignment.assistant_id:
-            driver_ids.append(assignment.assistant_id)
+    for sched in schedules:
+        driver_ids = [sched.driver_id]
+        if sched.assistant_id:
+            driver_ids.append(sched.assistant_id)
         driver_pair_key = tuple(sorted(driver_ids))
-        driver_pair_to_loco_ids[driver_pair_key].append(assignment.locomotive_id)
-    # Now, for each group, get the names
+        loco_ids = list(sched.locomotives.values_list('id', flat=True))
+        loco_names = list(sched.locomotives.values_list('locomotive', flat=True))
+        driver_pair_to_loco_ids[driver_pair_key].extend(loco_ids)
+        driver_pair_to_loco_names[driver_pair_key].extend(loco_names)
+    for pair in driver_pair_to_loco_names:
+        driver_pair_to_loco_names[pair] = list(sorted(set(driver_pair_to_loco_names[pair])))
+    locomotives = []
     for pair, loco_ids in driver_pair_to_loco_ids.items():
         locos = LocomotiveSpec.objects.filter(id__in=loco_ids)
         names = [l.locomotive for l in locos if l.locomotive]
-        driver_pair_to_loco_names[pair] = names
-    # Build a list of dicts for the dropdown
-    locomotives = []
-    used_loco_ids = set()
-    for names in driver_pair_to_loco_names.values():
-        ids = list(LocomotiveSpec.objects.filter(locomotive__in=names).values_list('id', flat=True))
+        ids = [l.id for l in locos]
         if not ids:
             continue
-        # Only add if all ids are in assigned_loco_ids
-        if not all(i in assigned_loco_ids for i in ids):
-            continue
-        # Avoid duplicates
-        if any(i in used_loco_ids for i in ids):
-            continue
-        used_loco_ids.update(ids)
         display_name = ', '.join(names)
-        # Use the first id as the value for the dropdown
-        locomotives.append({'id': ids[0], 'display_name': display_name})
+        locomotives.append({'id': ids[0], 'display_name': display_name, 'names': names})
 
-    # Get only UNASSIGNED wagons (pass model instances for template methods)
     wagons = WagonSpec.objects.filter(
         is_active=True,
         status='AVAILABLE',
         is_assigned=False
     ).order_by('wagon_number')
-    
-    
+
     # Handle POST requests
     if request.method == 'POST':
         action = request.POST.get('action')
-        
         if action == 'assign':
             locomotive_id = request.POST.get('locomotive_id')
             wagon_ids = request.POST.getlist('wagon_ids[]') or request.POST.getlist('wagon_ids')
-            
             if not locomotive_id:
                 messages.error(request, 'Please select a locomotive')
                 return redirect('locomotive_wagon_assignment')
-            
             if not wagon_ids:
                 messages.error(request, 'Please select at least one wagon')
                 return redirect('locomotive_wagon_assignment')
-            
             try:
                 loco = LocomotiveSpec.objects.filter(id=int(locomotive_id)).first()
             except Exception:
                 loco = None
-            
             if not loco:
                 messages.error(request, 'Selected locomotive not found')
                 return redirect('locomotive_wagon_assignment')
-            
-            # Get locomotive's hauling capacity in tons
             try:
                 loco_capacity = float(loco.capacity_in_tons) if loco.capacity_in_tons else None
             except (ValueError, TypeError):
                 loco_capacity = None
-            
-            # Calculate current total weight of already assigned wagons
             current_assignments = LocomotiveWagonAssignment.objects.filter(locomotive=loco).select_related('wagon')
             current_total_weight = 0
             for ca in current_assignments:
@@ -4627,49 +4694,36 @@ def locomotive_wagon_assignment(request):
                 tare = float(wagon.tare_weight or 0)
                 payload = float(wagon.payload_capacity or 0)
                 current_total_weight += (tare + payload)
-            
-            # Assign selected wagons
             assigned_count = 0
             already_assigned = 0
             duplicate_count = 0
             capacity_exceeded = False
             skipped_for_capacity = []
-            
             for wagon_id in wagon_ids:
                 try:
                     wagon = WagonSpec.objects.filter(id=int(wagon_id)).first()
                     if wagon:
-                        # Check if wagon is already assigned to ANY locomotive
                         if wagon.is_assigned:
                             already_assigned += 1
                             continue
-                        
-                        # Check if wagon is already assigned to THIS locomotive
                         if LocomotiveWagonAssignment.objects.filter(locomotive=loco, wagon=wagon).exists():
                             duplicate_count += 1
                             continue
-                        
-                        # Calculate weight of this wagon
                         wagon_tare = float(wagon.tare_weight or 0)
                         wagon_payload = float(wagon.payload_capacity or 0)
                         wagon_total_weight = wagon_tare + wagon_payload
-                        
-                        # Check capacity limit if locomotive has defined capacity
                         if loco_capacity:
                             new_total_weight = current_total_weight + wagon_total_weight
                             if new_total_weight > loco_capacity:
                                 capacity_exceeded = True
                                 skipped_for_capacity.append(wagon.wagon_number)
                                 continue
-                        
-                        # Create assignment
                         obj, created = LocomotiveWagonAssignment.objects.get_or_create(
                             locomotive=loco,
                             wagon=wagon,
                             defaults={'assigned_by': request.user}
                         )
                         if created:
-                            # Mark wagon as assigned
                             wagon.is_assigned = True
                             wagon.status = 'IN_USE'
                             wagon.save()
@@ -4678,8 +4732,6 @@ def locomotive_wagon_assignment(request):
                 except Exception as e:
                     logging.error(f"Failed to assign wagon {wagon_id}: {str(e)}")
                     continue
-            
-            # Provide feedback messages
             if assigned_count > 0:
                 messages.success(request, f'Assigned {assigned_count} wagon(s) to {loco.locomotive}. Total weight: {current_total_weight:.2f} tons' + (f' / {loco_capacity:.0f} tons capacity' if loco_capacity else ''))
             if already_assigned > 0:
@@ -4689,66 +4741,75 @@ def locomotive_wagon_assignment(request):
             if capacity_exceeded:
                 messages.error(request, f'Could not assign {len(skipped_for_capacity)} wagon(s) - would exceed locomotive capacity: {", ".join(skipped_for_capacity)}')
             return redirect('locomotive_wagon_assignment')
-        
         elif action == 'unassign':
             assignment_id = request.POST.get('assignment_id')
             if assignment_id:
                 try:
                     assignment = LocomotiveWagonAssignment.objects.get(id=int(assignment_id))
+                    wagon_id = assignment.wagon.id
                     assignment.delete()
+                    # Refresh wagon from DB to avoid stale reference
+                    wagon = WagonSpec.objects.get(id=wagon_id)
+                    wagon.is_assigned = False
+                    wagon.status = 'AVAILABLE'
+                    wagon.is_active = True
+                    wagon.save()
                     messages.success(request, f'Wagon {wagon.wagon_number} unassigned and is now available')
                 except Exception:
                     messages.error(request, 'Failed to unassign wagon')
             return redirect('locomotive_wagon_assignment')
-    
-    # Get all current wagon assignments
+        elif action == 'reassign':
+            assignment_id = request.POST.get('assignment_id')
+            new_locomotive_id = request.POST.get('new_locomotive_id')
+            if assignment_id and new_locomotive_id:
+                try:
+                    assignment = LocomotiveWagonAssignment.objects.get(id=int(assignment_id))
+                    new_loco = LocomotiveSpec.objects.get(id=int(new_locomotive_id))
+                    assignment.locomotive = new_loco
+                    assignment.save()
+                    messages.success(request, f'Locomotive changed for wagon {assignment.wagon.wagon_number}.')
+                except Exception as e:
+                    messages.error(request, f'Failed to change locomotive: {e}')
+            else:
+                messages.error(request, 'Missing assignment or locomotive selection.')
+            return redirect('locomotive_wagon_assignment')
+
+
+    # --- Group assignments by unique locomotive pairs (for filter and table) ---
+    from collections import defaultdict
     assignments_qs = LocomotiveWagonAssignment.objects.select_related('locomotive', 'wagon', 'assigned_by').order_by('-assigned_at')
-    
-    # Apply locomotive filter if provided
-    if locomotive_filter:
-        assignments_qs = assignments_qs.filter(locomotive_id=locomotive_filter)
-    
-    assignments = []
-    for a in assignments_qs:
-        wagon = a.wagon
-        tare = float(wagon.tare_weight or 0)
-        # Use actual cargo weight if wagon has cargo assigned, otherwise use max payload capacity
-        cargo_weight = wagon.get_cargo_weight()
-        total_weight = tare + cargo_weight
-        
-        # Include cargo information in assignment data
-        cargo_info = None
-        if wagon.current_cargo:
-            cargo_info = {
-                'type': wagon.current_cargo.cargo_type,
-                'weight': cargo_weight,
-                'volume': wagon.current_cargo.cargo_volume,
-            }
-        
-        assignments.append({
-            'id': a.id,
-            'locomotive_id': getattr(a.locomotive, 'id', ''),
-            'locomotive_name': getattr(a.locomotive, 'locomotive', ''),
-            'wagon_id': getattr(a.wagon, 'id', ''),
-            'wagon_number': getattr(a.wagon, 'wagon_number', ''),
-            'wagon_type': getattr(a.wagon, 'wagon_type', ''),
-            'tare_weight': tare,
-            'cargo_weight': cargo_weight,
-            'payload_capacity': float(wagon.payload_capacity or 0),
+    # Map: frozenset of loco IDs -> list of assignment dicts
+    group_assignments = defaultdict(list)
+    # Map: frozenset of loco IDs -> display name (comma separated)
+    group_display_names = {}
+
+    # Calculate totals for each group
+    group_assignments_with_totals = {}
+    for group_key, group in group_assignments.items():
+        total_tare = sum(item['tare_weight'] for item in group)
+        total_payload = sum(item['payload_capacity'] for item in group)
+        total_weight = sum(item['total_weight'] for item in group)
+        group_assignments_with_totals[group_key] = {
+            'assignments': group,
+            'total_tare': total_tare,
+            'total_payload': total_payload,
             'total_weight': total_weight,
-            'has_cargo': wagon.current_cargo is not None,
-            'cargo_info': cargo_info,
-            'assigned_at': a.assigned_at,
-            'assigned_by': getattr(a.assigned_by, 'email', 'Unknown'),
+        }
+
+    # Prepare filter options: unique locomotive pairings
+    filter_options = []
+    for group_key, display_name in group_display_names.items():
+        filter_options.append({
+            'key': ','.join(str(i) for i in sorted(group_key)),
+            'display': display_name,
         })
-    
-    # Calculate critical maintenance stats
+
     available_wagons = WagonSpec.objects.filter(is_active=True, status='AVAILABLE', is_assigned=False)
+    all_wagons = WagonSpec.objects.all()
     in_use_wagons = WagonSpec.objects.filter(status='IN_USE')
     in_maintenance_wagons = WagonSpec.objects.filter(status='MAINTENANCE')
     ready_for_activation = WagonSpec.objects.filter(status='READY_FOR_ACTIVATION')
     written_off_wagons = WagonSpec.objects.filter(status='WRITTEN_OFF')
-    # Map wagon assignments: {wagon_id: [locomotive_ids]}
     wagon_assignment_map = {}
     for a in LocomotiveWagonAssignment.objects.select_related('wagon', 'locomotive'):
         wagon_assignment_map.setdefault(a.wagon.id, []).append(a.locomotive.id)
@@ -4757,11 +4818,8 @@ def locomotive_wagon_assignment(request):
     total_in_use_capacity = sum(float(w.payload_capacity or 0) for w in in_use_wagons)
     available_capacity = total_capacity - total_in_use_capacity
     in_use_capacity = total_in_use_capacity
-    # Get all maintenance schedules for wagons
-    from django.utils import timezone
     maintenance_list = []
     for schedule in MaintenanceSchedule.objects.filter(item_type='WAGON').select_related('wagon').order_by('-created_at'):
-        # Find last completed maintenance for this wagon
         last_maintenance = MaintenanceSchedule.objects.filter(
             wagon=schedule.wagon,
             status='COMPLETED',
@@ -4791,7 +4849,6 @@ def locomotive_wagon_assignment(request):
             urgency_color = '#dc3545'
             days_since = 'Never'
             last_maintenance_date = None
-        # Attach urgency/status to schedule for template
         schedule.urgency_level = urgency_level
         schedule.urgency_color = urgency_color
         schedule.days_since_last = days_since
@@ -4803,13 +4860,9 @@ def locomotive_wagon_assignment(request):
     sort_by = ''
     start_date = None
     end_date = None
-    locomotives_with_wagons = LocomotiveSpec.objects.filter(is_active=True)
     locomotive_filter = request.GET.get('locomotive', '')
     critical_count = sum(1 for m in maintenance_list if m.urgency_level == 'CRITICAL')
     high_count = sum(1 for m in maintenance_list if m.urgency_level == 'HIGH')
-
-    # Attach assignments to each in-use wagon for template
-    from collections import defaultdict
     assignments_by_wagon = defaultdict(list)
     for a in LocomotiveWagonAssignment.objects.select_related('locomotive', 'wagon'):
         assignments_by_wagon[a.wagon.id].append({
@@ -4818,10 +4871,6 @@ def locomotive_wagon_assignment(request):
         })
     for wagon in in_use_wagons:
         wagon.assignments = assignments_by_wagon.get(wagon.id, [])
-    # Locomotives with at least one assigned wagon
-    from django.db.models import Exists, OuterRef
-    assigned_loco_ids = LocomotiveWagonAssignment.objects.values_list('locomotive_id', flat=True).distinct()
-    locomotives_with_assignments = LocomotiveSpec.objects.filter(id__in=assigned_loco_ids)
 
     context = {
         'Account_type': account_type,
@@ -4844,12 +4893,13 @@ def locomotive_wagon_assignment(request):
         'end_date': end_date,
         'critical_count': critical_count,
         'high_count': high_count,
-        'locomotives': locomotives_with_wagons,
-        'locomotives_with_assignments': locomotives_with_assignments,
         'locomotive_filter': locomotive_filter,
         'wagons': wagons,
-        'locomotives_list': locomotives,
-        'assignments': assignments,
+        'locomotives_list': locomotives,  # Only use this for the dropdown
+        'group_assignments': group_assignments_with_totals,  # For table display
+        'filter_options': filter_options,  # For filter dropdown
+        'loco_summaries': loco_summaries,
+        'date_filter': date_filter,
     }
     return render(request, 'locomotive_wagon_assignment.html', context)
 
