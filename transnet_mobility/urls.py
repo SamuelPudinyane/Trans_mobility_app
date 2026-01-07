@@ -1,7 +1,17 @@
+ 
 from django.urls import path
 from . import views
+from rest_framework.routers import DefaultRouter
+from .views import DriverViewSet, LocomotiveViewSet, LocomotiveAssignmentViewSet, ScheduleViewSet
+
+router = DefaultRouter()
+router.register(r'api/drivers', DriverViewSet, basename='driver')
+router.register(r'api/locomotives', LocomotiveViewSet, basename='locomotive')
+router.register(r'api/assignments', LocomotiveAssignmentViewSet, basename='assignment')
+router.register(r'api/schedules', ScheduleViewSet, basename='schedule')
 
 urlpatterns = [
+        path('api/maintenance-detail/<int:schedule_id>/', views.maintenance_detail_api, name='maintenance_detail_api'),
     path('', views.login_view, name='login'),
     path('home/', views.home, name='edit_user'),
     path('register_user/',views.register_user,name='register_user'),
@@ -18,8 +28,11 @@ urlpatterns = [
     path('wheelset/',views.wheelset,name='wheelset'),
     path('driver_assignment/',views.driver_assignment,name='driver_assignment'),
     path('locomotive_wagon_assignment/',views.locomotive_wagon_assignment,name='locomotive_wagon_assignment'),
+    path('wagon_locomotive_assignment/', views.wagon_locomotive_assignment, name='wagon_locomotive_assignment'),
     path('all_users/',views.all_users,name='all_users'),
-    path('notifications/',views.notifications,name='notifications'),
+    path('notifications/',views.notifications_dashboard,name='notifications'),
+    path('settings/',views.settings,name='settings'),
+    path('data_request/',views.data_request,name='data_request'),
     path('complete_trip/',views.complete_trip,name='complete_trip'),
     path('trip_data/',views.trip_data,name='trip_data'),
     path('driver_request/',views.driver_request,name='driver_request'),
@@ -47,6 +60,7 @@ urlpatterns = [
     path('api/count_assigned_drivers/', views.count_assigned_drivers, name='count_assigned_drivers'),
     path('api/emergency-alerts/', views.emergency_alerts, name='emergency_alerts'),
     path('api/maintanance-scheduling/', views.maintanance_scheduling, name='maintanance_scheduling'),
+    path('api/dashboard-stats/', views.dashboard_stats_api, name='dashboard_stats_api'),
     path('incident-heatmap/', views.incident_heatmap, name='incident_heatmap'),
     path('dispatch-assistance/<int:request_id>/', views.dispatch_assistance, name='dispatch_assistance'),
     path('my-notifications/', views.my_notifications, name='my_notifications'),
@@ -54,6 +68,7 @@ urlpatterns = [
     path('manage-users/', views.manage_users, name='manage_users'),
     path('activate-user/<str:user_id>/', views.activate_user, name='activate_user'),
     path('deactivate-user/<str:user_id>/', views.deactivate_user, name='deactivate_user'),
+    path('change-user-status/<str:user_id>/', views.change_user_status, name='change_user_status'),
     path('edit-user-admin/<str:user_id>/', views.edit_user_admin, name='edit_user_admin'),
     # Locomotive Management URLs
     path('locomotive-dashboard/', views.locomotive_dashboard, name='locomotive_dashboard'),
@@ -70,6 +85,7 @@ urlpatterns = [
     path('delete-wagon/<int:wagon_id>/', views.delete_wagon, name='delete_wagon'),
     # Wagon Management URLs
     path('wagon-dashboard/', views.wagon_dashboard, name='wagon_dashboard'),
+    path('wagon-dashboard/<int:wagon_id>/', views.wagon_dashboard, name='wagon_dashboard_single'),
     path('schedule-wagon-maintenance/', views.schedule_wagon_maintenance, name='schedule_wagon_maintenance'),
     path('update-wagon-maintenance-status/<int:maintenance_id>/', views.update_wagon_maintenance_status, name='update_wagon_maintenance_status'),
     path('activate-wagon/<int:wagon_id>/', views.activate_wagon, name='activate_wagon'),
@@ -88,4 +104,7 @@ urlpatterns = [
     path('api/optimizer/suggestions/', views.get_optimization_suggestions, name='get_optimization_suggestions'),
     path('api/optimizer/suggestions/<int:suggestion_id>/update/', views.update_suggestion_status, name='update_suggestion_status'),
     path('optimization-dashboard/', views.optimization_dashboard, name='optimization_dashboard'),
+    path('scheduling/', views.scheduling_dashboard, name='scheduling_dashboard'),
 ]
+
+urlpatterns += router.urls

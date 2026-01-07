@@ -55,6 +55,8 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 # --- Custom User ---
 class CustomUser(AbstractUser):
+    # Date when user should return from leave (auto-reset to available)
+    on_leave_until = models.DateField(blank=True, null=True, help_text="Date when user should return from leave (auto-reset to available)")
     User_id = models.CharField(max_length=255, primary_key=True, default=generate_uuid)
     username = None  # ✅ disable username
     email = models.EmailField(unique=True, blank=False, null=False)  # ✅ email required & unique
@@ -82,6 +84,21 @@ class CustomUser(AbstractUser):
         ],
         default='OTHER'
     )
+
+    # Scheduling/availability fields for drivers
+    driver_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('available', 'Available'),
+            ('on_leave', 'On Leave'),
+            ('emergency', 'Emergency'),
+        ],
+        default='available',
+        blank=True,
+        null=True
+    )
+    last_location = models.CharField(max_length=100, blank=True, null=True)
+    current_location = models.CharField(max_length=100, blank=True, null=True)
 
     role = models.CharField(
         max_length=50,
@@ -114,6 +131,12 @@ class CustomUser(AbstractUser):
 
 
 class UserLocation(models.Model):
+        # Optionally, add a helper to update CustomUser.current_location on save
+    def save(self, *args, **kwargs):
+            super().save(*args, **kwargs)
+            # Update user's current_location field
+            self.user.current_location = f"{self.latitude},{self.longitude}"
+            self.user.save(update_fields=["current_location"])
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -131,6 +154,7 @@ class UserLocation(models.Model):
 
 
 class LocomotiveSpec(models.Model):
+    area = models.CharField(max_length=100, blank=True, null=True)
     """Store locomotive specification fields and the raw survey data.
     survey_raw will contain the questions and answers concatenated using commas
     as requested (question, type, answers joined with commas, ...)
@@ -188,6 +212,8 @@ class LocomotiveSpec(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
+        if self.locomotive:
+            return f"{self.locomotive} (ID {self.id})"
         return f"LocomotiveSpec {self.id} by {getattr(self.created_by, 'email', 'unknown')}"
 
 
@@ -283,42 +309,63 @@ class WheelsetSpec(models.Model):
         return f"WheelsetSpec {self.id} ({self.wheel_profile}) by {getattr(self.created_by, 'email', 'unknown')}"
 
 
+
+# Wagon-related constants (move outside class for correct indentation)
+WAGON_TYPES = [
+    ('BOX', 'Box Wagon'),
+    ('FLAT', 'Flat Wagon'),
+    ('HOPPER', 'Hopper Wagon'),
+    ('TANK', 'Tank Wagon'),
+    ('REFRIGERATED', 'Refrigerated Wagon'),
+    ('AUTO_CARRIER', 'Auto Carrier'),
+    ('TIPPLER', 'Tippler Wagon'),
+]
+
+BRAKING_SYSTEMS = [
+    ('UIC', 'UIC Standard Air Brake'),
+    ('AAR', 'AAR Standard Air Brake'),
+]
+
+COUPLING_TYPES = [
+    ('AAR', 'AAR Knuckle Coupler'),
+    ('SA3', 'SA3 Automatic Coupler'),
+]
+
+TRACK_GAUGES = [
+    ('1435', '1,435 mm (Standard Gauge)'),
+    ('1067', '1,067 mm (Cape Gauge)'),
+]
+
+SUSPENSION_TYPES = [
+    ('COIL', 'Coil Spring Bogies'),
+    ('LEAF', 'Leaf Spring Bogies'),
+]
+
+BOGIE_TYPES = [
+    ('TWO_AXLE', 'Two-Axle Bogies'),
+    ('FOUR_AXLE', 'Four-Axle Bogies'),
+]
+
 class WagonSpec(models.Model):
-    WAGON_TYPES = [
-        ('BOX', 'Box Wagon'),
-        ('FLAT', 'Flat Wagon'),
-        ('HOPPER', 'Hopper Wagon'),
-        ('TANK', 'Tank Wagon'),
-        ('REFRIGERATED', 'Refrigerated Wagon'),
-        ('AUTO_CARRIER', 'Auto Carrier'),
-        ('TIPPLER', 'Tippler Wagon'),
-    ]
-    
-    BRAKING_SYSTEMS = [
-        ('UIC', 'UIC Standard Air Brake'),
-        ('AAR', 'AAR Standard Air Brake'),
-    ]
-    
-    COUPLING_TYPES = [
-        ('AAR', 'AAR Knuckle Coupler'),
-        ('SA3', 'SA3 Automatic Coupler'),
-    ]
-    
-    TRACK_GAUGES = [
-        ('1435', '1,435 mm (Standard Gauge)'),
-        ('1067', '1,067 mm (Cape Gauge)'),
-    ]
-    
-    SUSPENSION_TYPES = [
-        ('COIL', 'Coil Spring Bogies'),
-        ('LEAF', 'Leaf Spring Bogies'),
-    ]
-    
-    BOGIE_TYPES = [
-        ('TWO_AXLE', 'Two-Axle Bogies'),
-        ('FOUR_AXLE', 'Four-Axle Bogies'),
-    ]
-    
+    def get_assigned_locomotives(self):
+        """Return all LocomotiveSpec objects assigned to this wagon."""
+        return LocomotiveSpec.objects.filter(wagon_assignments__wagon=self)
+
+    def get_total_locomotive_power(self):
+        """Sum the power of all assigned locomotives for this wagon."""
+        locomotives = self.get_assigned_locomotives()
+        total_power = 0
+        for loco in locomotives:
+            # Assuming 'tractive_effort' or 'power' field exists and is numeric
+            try:
+                if hasattr(loco, 'tractive_effort') and loco.tractive_effort:
+                    total_power += float(loco.tractive_effort)
+                elif hasattr(loco, 'power') and loco.power:
+                    total_power += float(loco.power)
+            except Exception:
+                continue
+        return total_power
+
     id = models.AutoField(primary_key=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -326,11 +373,11 @@ class WagonSpec(models.Model):
         null=True,
         to_field='User_id'
     )
-    
+
     # General Identification
     wagon_number = models.CharField(max_length=100, unique=True, help_text="Unique wagon identifier")
     wagon_type = models.CharField(max_length=50, choices=WAGON_TYPES, default='BOX')
-    
+
     # General Dimensions
     length_over_buffers = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, help_text="Length in meters (10-25m)")
     width = models.DecimalField(max_digits=4, decimal_places=2, blank=True, null=True, help_text="Width in meters (2.8-3.2m)")
@@ -482,6 +529,15 @@ class FuelSpec(models.Model):
         return f"FuelSpec {self.id} (type={self.fuel_type}) by {getattr(self.created_by, 'email', 'unknown')}"
 
 class LocomotiveAssignment(models.Model):
+    # Optionally, add assistant driver
+    assistant = models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.SET_NULL,
+            null=True,
+            blank=True,
+            to_field='User_id',
+            related_name='assistant_assignments'
+        )
     """Represents assignment of a driver to a locomotive. One row per (locomotive, driver).
     We enforce uniqueness at the DB level to avoid duplicate assignments. The application
     logic will ensure a locomotive does not end up with more than two assigned drivers.
@@ -498,11 +554,80 @@ class LocomotiveAssignment(models.Model):
     )
     assigned_at = models.DateTimeField(auto_now_add=True)
 
+    # Track assignment status for scheduling
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('assigned', 'Assigned'),
+            ('completed', 'Completed'),
+            ('cancelled', 'Cancelled'),
+        ],
+        default='assigned',
+    )
+
     class Meta:
         unique_together = ('locomotive', 'driver')
 
+class Schedule(models.Model):
+    """Driver scheduling for day/week/month with color-coded status and area/location validation."""
+    id = models.AutoField(primary_key=True)
+    driver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        to_field='User_id',
+        related_name='driver_schedules'
+    )
+    assistant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        to_field='User_id',
+        related_name='assistant_schedules'
+    )
+    locomotives = models.ManyToManyField(
+        LocomotiveSpec,
+        related_name='schedule_locomotives',
+        blank=True
+    )
+    date = models.DateField()
+    shift_type = models.CharField(
+        max_length=10,
+        choices=[('day', 'Day'), ('week', 'Week'), ('month', 'Month')],
+        default='day',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('available', 'Available'),
+            ('on_leave', 'On Leave'),
+            ('emergency', 'Emergency'),
+            ('assigned', 'Assigned'),
+            ('completed', 'Completed'),
+        ],
+        default='available',
+    )
+    area = models.CharField(max_length=100, blank=True, null=True)
+    last_location = models.CharField(max_length=100, blank=True, null=True)
+    current_location = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-date", "driver"]
+        unique_together = ("driver", "date", "shift_type")
+
     def __str__(self):
-        return f"Assignment: locomotive={getattr(self.locomotive,'locomotive','?')} driver={getattr(self.driver,'email','?')}"
+        locomotives_str = ", ".join([str(loco) for loco in self.locomotives.all()])
+        parts = [
+            f"Driver: {getattr(self.driver, 'email', '?')}",
+            f"Assistant: {getattr(self.assistant, 'email', 'None')}",
+            f"Locomotives: {locomotives_str if locomotives_str else 'None'}",
+            f"Date: {self.date}",
+            f"Shift: {self.shift_type}",
+            f"Status: {self.status}"
+        ]
+        return " | ".join(parts)
 
 
 class LocomotiveWagonAssignment(models.Model):
@@ -743,6 +868,18 @@ class MaintenanceSchedule(models.Model):
     # Notes and updates
     maintenance_notes = models.TextField(blank=True, null=True)
     completion_notes = models.TextField(blank=True, null=True)
+
+    # Urgency level for maintenance
+    urgency_level = models.CharField(
+        max_length=20,
+        choices=[
+            ("LOW", "Low"),
+            ("MEDIUM", "Medium"),
+            ("HIGH", "High"),
+            ("CRITICAL", "Critical"),
+        ],
+        default="MEDIUM"
+    )
     
     # Admin activation
     activated_by = models.ForeignKey(

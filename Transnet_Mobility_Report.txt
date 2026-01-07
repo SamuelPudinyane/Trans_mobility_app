@@ -1,0 +1,83 @@
+Transnet Mobility Application – Full Report
+
+Overview
+Transnet Mobility is a web-based management and scheduling platform for railway operations, designed to streamline the assignment, monitoring, and administration of drivers, locomotives, wagons, and related resources. The application is built with Django and Django REST Framework, providing both a robust backend and a user-friendly frontend for administrators and operational staff.
+
+Key Features
+1. User Management
+- Roles: Supports multiple user roles including Admin, Driver, Staff, Maintenance Teams, Emergency Response, Security, Medical, and Towing Service.
+- Admin Controls: Admins can activate, deactivate, and edit users, as well as change their availability status (Available, On Leave, Emergency).
+- Status Management: When a user is set to "On Leave" or "Emergency," the admin can specify a return date. The system automatically resets the status to "Available" when the date is reached.
+- Notifications: Status changes trigger email notifications to the user and all admins.
+
+2. Driver and Worker Scheduling
+- Dashboard: Visual scheduling dashboard with color-coded availability, dynamic filtering, and location-based assignment rules.
+- Pairing: Supports assignment of both drivers and assistants to locomotives and wagons.
+- Auto-Update: Schedules and assignments are updated automatically when a user’s status changes.
+
+3. Locomotive and Wagon Assignment
+- Many-to-Many Assignment: Admins can assign multiple locomotives to a single wagon and vice versa.
+- Bulk Assignment: The UI allows selection of multiple locomotives for a wagon using checkboxes.
+- Assignment Management: Admins can add or remove locomotive assignments for each wagon directly from the dashboard.
+- Power Calculation: The system calculates and displays the total power of all locomotives assigned to a wagon.
+
+4. Resource Specifications
+- Locomotive, Wagon, Cargo, and Wheelset Specs: Admins can manage detailed specifications for all rolling stock and cargo.
+- Maintenance Tracking: Dashboards for electrical and mechanical maintenance, including scheduling and status updates.
+
+5. Operational Dashboards
+- Role-Based Dashboards: Each user role has a dedicated dashboard (e.g., Security, Medical, Towing, Maintenance).
+- Trip Management: Drivers can complete trips, releasing their assigned locomotives and wagons.
+
+6. Notifications and Alerts
+- Private Messaging: Users can send and receive private messages within the system.
+- Incident Reporting: Emergency and security teams can report and respond to incidents.
+- Automated Alerts: System-generated alerts for status changes, assignments, and incidents.
+
+7. Data Integrity and Automation
+- Unique Constraints: Enforced for user emails, staff numbers, and wagon/locomotive identifiers.
+- Fake Data Generation: Management commands to create fake users, locomotives, and wagons for testing.
+- Auto-Reset Logic: Users on leave are automatically set to available when their return date arrives.
+
+8. User Interface
+- Modern UI: Uses Bootstrap for responsive design, with modals, tables, and color-coded badges.
+- Dynamic Forms: Date pickers, status dropdowns, and multi-select checkboxes for efficient admin workflows.
+- Real-Time Feedback: Success, warning, and error messages for all major actions.
+
+Technical Stack
+- Backend: Django, Django REST Framework
+- Frontend: Django Templates, Bootstrap, JavaScript
+- Database: SQLite (default, can be configured for PostgreSQL)
+- Email: Django’s email backend for notifications
+- Authentication: Custom user model with email as the primary identifier
+
+Example Workflows
+Assigning Locomotives to Wagons
+1. Admin selects a wagon and checks multiple locomotives to assign.
+2. The system creates assignments and updates the total power for the wagon.
+3. Admin can remove assignments or add more locomotives at any time.
+
+Managing User Availability
+1. Admin changes a user’s status to “On Leave” and selects a return date.
+2. The user is unassigned from all future schedules and assignments.
+3. The system sends notifications and automatically resets the status to “Available” on the return date.
+
+Driver Scheduling
+1. Admin views the scheduling dashboard with all drivers and their statuses.
+2. Assignments are made based on availability, location, and pairing requirements.
+3. Color-coded statuses and filters help quickly identify and assign resources.
+
+Security and Data Integrity
+- Only admins can change user statuses and manage assignments.
+- All actions are logged, and critical changes trigger notifications.
+- Unique constraints and validation prevent duplicate or invalid data.
+
+Extensibility
+- The system is designed to be extensible, with modular models and views.
+- New roles, assignment types, and dashboards can be added with minimal changes.
+- REST API endpoints are available for integration with other systems.
+
+Conclusion
+Transnet Mobility is a comprehensive, modern platform for managing railway personnel, rolling stock, and operational assignments. It automates complex workflows, ensures data integrity, and provides a user-friendly interface for both administrators and operational staff. The system is robust, extensible, and ready for real-world deployment in a railway operations environment.
+
+If you need a PDF, a more technical/developer-focused report, or a user manual, let me know!

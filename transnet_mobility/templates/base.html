@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="{% static 'style.css' %}">
     <title>Transnet Freight Rail Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <!-- Bootstrap Select CSS (must be before Bootstrap CSS for proper override) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome for icons -->
@@ -38,7 +40,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--transnet-light);
-            background-image: url({% static './images/back.png' %});
+            background-image: url({% static 'images/back.png' %});
         }
 
         /* Sidebar styling */
@@ -159,7 +161,7 @@
             padding: 24px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
-            background-image: url({% static '/images/mmm.png'%});
+            background-image: url({% static 'images/mmm.png' %});
             font-family: Georgia, 'Times New Roman', Times, serif;
             margin-top: -20px;
             background-size: cover;
@@ -394,7 +396,7 @@
             color: green;
           }
           .welcome-section {
-            background-image: url("{% static 'images/mmm.png' %}");
+            background-image: url({% static 'images/mmm.png' %});
           }
           #map {
             height:100vh;
@@ -464,6 +466,7 @@
                         <li><a href="{% url 'wagon_dashboard' %}"><i class="fas fa-trailer"></i> Wagon Management</a></li>
                         <li><a href="{% url 'locomotive_wagon_assignment' %}"><i class="fas fa-link"></i> Assign Wagons to Locomotive</a></li>
                         <li><a href="{% url 'driver_assignment' %}"><i class="fas fa-user-tie"></i> Assign Driver To Locomotive</a></li>
+                        <li><a href="{% url 'scheduling_dashboard' %}"><i class="fas fa-calendar-alt"></i> Scheduling Dashboard</a></li>
                         <li><a href="{% url 'cargo_specs' %}"><i class="fas fa-box"></i> Cargo Configuration</a></li>
                         <li><a href="{% url 'wagon_specs' %}"><i class="fas fa-train"></i> Wagon Specifications</a></li>
                         <li><a href="{% url 'locomotive_config' %}"><i class="fas fa-locomotive"></i> Locomotive Configuration</a></li>
@@ -495,6 +498,7 @@
                         <li><a href="{% url 'manage_users' %}"><i class="fas fa-users-cog"></i> Manage Users</a></li>
                     </ul>
                 </li>
+                    <li><a href="/notifications/"><i class="fas fa-bell"></i> Notifications</a></li>
                 <li>
                     <a href="#asset-utilization" data-bs-toggle="collapse">
                         <i class="fas fa-map"></i>Live Location
@@ -720,8 +724,13 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS Bundle with Popper -->
+
+    <!-- jQuery (required for Bootstrap Select) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS Bundle with Popper (after jQuery) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Select JS (after Bootstrap JS) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
 
     <script>
         // Toggle sidebar on mobile
@@ -761,6 +770,24 @@
             });
         });
 
+        // Sidebar dropdown toggle (accordion behavior)
+        document.querySelectorAll('.sidebar-menu > li > a[data-bs-toggle="collapse"]').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                var targetId = this.getAttribute('href');
+                var target = document.querySelector(targetId);
+                if (!target) return;
+                e.preventDefault();
+                // Hide all other dropdowns
+                document.querySelectorAll('.sidebar-dropdown.collapse').forEach(function(ul) {
+                    if (ul !== target) {
+                        ul.classList.remove('show');
+                    }
+                });
+                // Toggle this dropdown
+                target.classList.toggle('show');
+            });
+        });
+
         // Create gradient for chart backgrounds
         function createGradient(ctx, color1, color2) {
             const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -772,225 +799,233 @@
         // Initialize charts with custom colors
         document.addEventListener('DOMContentLoaded', function () {
             // Main Bar Chart
-            const barCtx = document.getElementById('barChart').getContext('2d');
-            const barChart = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [
-                        {
-                            label: 'Wagons Processed (thousands)',
-                            data: [45, 52, 48, 55, 60, 58],
-                            backgroundColor: '#a10d00',
-                            borderColor: '#a10d00',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Delays (hours)',
-                            data: [120, 95, 110, 85, 75, 90],
-                            backgroundColor: '#d9ddde',
-                            borderColor: '#d9ddde',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                        }
+            const barChartElem = document.getElementById('barChart');
+            if (barChartElem) {
+                const barCtx = barChartElem.getContext('2d');
+                const barChart = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [
+                            {
+                                label: 'Wagons Processed (thousands)',
+                                data: [45, 52, 48, 55, 60, 58],
+                                backgroundColor: '#a10d00',
+                                borderColor: '#a10d00',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Delays (hours)',
+                                data: [120, 95, 110, 85, 75, 90],
+                                backgroundColor: '#d9ddde',
+                                borderColor: '#d9ddde',
+                                borderWidth: 1
+                            }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                drawOnChartArea: true,
-                                color: 'rgba(0, 0, 0, 0.05)'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
                             }
                         },
-                        x: {
-                            grid: {
-                                drawOnChartArea: false
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawOnChartArea: true,
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    drawOnChartArea: false
+                                }
                             }
                         }
-                    }
-                }
-            });
+                    });
+            }
 
             // Line Chart (On-Time Performance)
-            const lineCtx = document.getElementById('lineChart').getContext('2d');
-            const lineChart = new Chart(lineCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [{
-                        label: 'On-Time Percentage',
-                        data: [82, 85, 88, 90],
-                        backgroundColor: 'rgba(221, 55, 51, 0.1)',
-                        borderColor: '#dd3733',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+            const lineChartElem = document.getElementById('lineChart');
+            if (lineChartElem) {
+                const lineCtx = lineChartElem.getContext('2d');
+                const lineChart = new Chart(lineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        datasets: [{
+                            label: 'On-Time Percentage',
+                            data: [82, 85, 88, 90],
+                            backgroundColor: 'rgba(221, 55, 51, 0.1)',
+                            borderColor: '#dd3733',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            min: 75,
-                            max: 100,
-                            grid: {
-                                drawOnChartArea: true,
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            },
-                            ticks: {
-                                callback: function (value) {
-                                    return value + '%';
-                                }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
                             }
                         },
-                        x: {
-                            grid: {
-                                drawOnChartArea: false
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 75,
+                                max: 100,
+                                grid: {
+                                    drawOnChartArea: true,
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    callback: function (value) {
+                                        return value + '%';
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    drawOnChartArea: false
+                                }
                             }
                         }
-                    }
-                }
-            });
+                    });
+            }
 
             // Horizontal Bar Chart (Yard Utilization)
-            const horizontalBarCtx = document.getElementById('horizontalBarChart').getContext('2d');
-            const horizontalBarChart = new Chart(horizontalBarCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Main Yard', 'Freight Yard', 'Passenger Yard', 'Maintenance Yard'],
-                    datasets: [{
-                        label: 'Utilization Rate',
-                        data: [85, 72, 65, 55],
-                        backgroundColor: [
-                            '#a10d00',
-                            '#dd3733',
-                            '#d9ddde',
-                            '#a0a0a8'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    return context.raw + '% utilization';
-                                }
-                            }
-                        }
+            const horizontalBarChartElem = document.getElementById('horizontalBarChart');
+            if (horizontalBarChartElem) {
+                const horizontalBarCtx = horizontalBarChartElem.getContext('2d');
+                const horizontalBarChart = new Chart(horizontalBarCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Main Yard', 'Freight Yard', 'Passenger Yard', 'Maintenance Yard'],
+                        datasets: [{
+                            label: 'Utilization Rate',
+                            data: [85, 72, 65, 55],
+                            backgroundColor: [
+                                '#a10d00',
+                                '#dd3733',
+                                '#d9ddde',
+                                '#a0a0a8'
+                            ],
+                            borderWidth: 0
+                        }]
                     },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            max: 100,
-                            grid: {
-                                drawOnChartArea: false
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
                             },
-                            ticks: {
-                                callback: function (value) {
-                                    return value + '%';
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.raw + '% utilization';
+                                    }
                                 }
                             }
                         },
-                        y: {
-                            grid: {
-                                drawOnChartArea: false
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    drawOnChartArea: false
+                                },
+                                ticks: {
+                                    callback: function (value) {
+                                        return value + '%';
+                                    }
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    drawOnChartArea: false
+                                }
                             }
                         }
-                    }
-                }
-            });
+                    });
+            }
 
             // Stacked Bar Chart (Freight Distribution)
-            const stackedBarCtx = document.getElementById('stackedBarChart').getContext('2d');
-            const stackedBarChart = new Chart(stackedBarCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Coal', 'Iron Ore', 'Manganese', 'Other Minerals', 'Containers'],
-                    datasets: [
-                        {
-                            label: 'Gauteng',
-                            data: [15, 20, 10, 5, 25],
-                            backgroundColor: '#a10d00',
-                            borderColor: '#a10d00',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Western Cape',
-                            data: [5, 8, 12, 3, 30],
-                            backgroundColor: '#dd3733',
-                            borderColor: '#dd3733',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'KwaZulu-Natal',
-                            data: [10, 15, 8, 4, 35],
-                            backgroundColor: '#d9ddde',
-                            borderColor: '#d9ddde',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                        }
+            const stackedBarChartElem = document.getElementById('stackedBarChart');
+            if (stackedBarChartElem) {
+                const stackedBarCtx = stackedBarChartElem.getContext('2d');
+                const stackedBarChart = new Chart(stackedBarCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Coal', 'Iron Ore', 'Manganese', 'Other Minerals', 'Containers'],
+                        datasets: [
+                            {
+                                label: 'Gauteng',
+                                data: [15, 20, 10, 5, 25],
+                                backgroundColor: '#a10d00',
+                                borderColor: '#a10d00',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Western Cape',
+                                data: [5, 8, 12, 3, 30],
+                                backgroundColor: '#dd3733',
+                                borderColor: '#dd3733',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'KwaZulu-Natal',
+                                data: [10, 15, 8, 4, 35],
+                                backgroundColor: '#d9ddde',
+                                borderColor: '#d9ddde',
+                                borderWidth: 1
+                            }
+                        ]
                     },
-                    scales: {
-                        x: {
-                            stacked: true,
-                            grid: {
-                                drawOnChartArea: false
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
                             }
                         },
-                        y: {
-                            stacked: true,
-                            grid: {
-                                drawOnChartArea: true,
-                                color: 'rgba(0, 0, 0, 0.05)'
+                        scales: {
+                            x: {
+                                stacked: true,
+                                grid: {
+                                    drawOnChartArea: false
+                                }
                             },
-                            ticks: {
-                                callback: function (value) {
-                                    return value + '%';
+                            y: {
+                                stacked: true,
+                                grid: {
+                                    drawOnChartArea: true,
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    callback: function (value) {
+                                        return value + '%';
+                                    }
                                 }
                             }
                         }
-                    }
-                }
-            });
+                    });
+            }
         });
     </script>
 </body>

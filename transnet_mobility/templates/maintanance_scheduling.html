@@ -421,6 +421,26 @@
     </div>
 </div>
 
+<!-- Maintenance Detail Modal -->
+<div class="modal fade" id="maintenanceDetailModal" tabindex="-1" aria-labelledby="maintenanceDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="maintenanceDetailModalLabel">Maintenance Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="maintenanceDetailContent">
+          <div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 function toggleItemSelection() {
     const itemType = document.getElementById('item_type_select').value;
@@ -428,7 +448,6 @@ function toggleItemSelection() {
     const wagonDiv = document.getElementById('wagon_selection');
     const locoSelect = document.getElementById('locomotive_select');
     const wagonSelect = document.getElementById('wagon_select');
-    
     if (itemType === 'LOCOMOTIVE') {
         locoDiv.style.display = 'block';
         wagonDiv.style.display = 'none';
@@ -450,27 +469,73 @@ function toggleItemSelection() {
 }
 
 function viewDetails(scheduleId) {
-    // You can implement a detail view modal here
-    alert('View details for schedule ID: ' + scheduleId);
+    // Show modal
+    var modal = new bootstrap.Modal(document.getElementById('maintenanceDetailModal'));
+    document.getElementById('maintenanceDetailContent').innerHTML = '<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+    modal.show();
+    // Fetch details via AJAX
+    fetch(`/api/maintenance-detail/${scheduleId}/`)
+        .then(resp => resp.json())
+        .then(data => {
+            let html = `<h5>Maintenance ID: #${data.id}</h5>`;
+            html += `<p><strong>Type:</strong> ${data.item_type}</p>`;
+            html += `<p><strong>Item:</strong> ${data.item_name}</p>`;
+            html += `<p><strong>Status:</strong> ${data.status}</p>`;
+            html += `<p><strong>Reason:</strong> ${data.reason}</p>`;
+            html += `<p><strong>Scheduled By:</strong> ${data.scheduled_by}</p>`;
+            html += `<p><strong>Scheduled Date:</strong> ${data.scheduled_date}</p>`;
+            html += `<p><strong>Expected Completion:</strong> ${data.expected_completion_date}</p>`;
+            html += `<p><strong>Actual Completion:</strong> ${data.actual_completion_date || '<span class="text-muted">Not completed</span>'}</p>`;
+            html += `<hr><h6>Admin to Maintenance Response</h6>`;
+            if (data.status_updates && data.status_updates.length > 0) {
+                html += '<ul class="list-group mb-3">';
+                data.status_updates.forEach(update => {
+                    html += `<li class="list-group-item">
+                        <strong>${update.status}</strong> by ${update.updated_by} <span class="text-muted">(${update.updated_at})</span><br>
+                        <span>${update.notes || ''}</span>
+                    </li>`;
+                });
+                html += '</ul>';
+            } else {
+                html += '<div class="text-muted">No status updates found.</div>';
+            }
+            html += `<hr><h6>Attendance Log</h6>`;
+            if (data.attendance && data.attendance.length > 0) {
+                html += '<ul class="list-group">';
+                data.attendance.forEach(att => {
+                    html += `<li class="list-group-item">
+                        <strong>${att.user}</strong> - ${att.role} <span class="text-muted">(${att.timestamp})</span>
+                    </li>`;
+                });
+                html += '</ul>';
+            } else {
+                html += '<div class="text-muted">No attendance recorded.</div>';
+            }
+            document.getElementById('maintenanceDetailContent').innerHTML = html;
+        })
+        .catch(err => {
+            document.getElementById('maintenanceDetailContent').innerHTML = '<div class="text-danger">Failed to load details.</div>';
+        });
 }
 
 // Set minimum date to today for scheduled date
 document.addEventListener('DOMContentLoaded', function() {
     const scheduledDateInput = document.getElementById('scheduled_date');
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-    scheduledDateInput.min = minDateTime;
-    
-    // Update expected completion min when scheduled date changes
-    scheduledDateInput.addEventListener('change', function() {
-        const expectedCompletionInput = document.getElementById('expected_completion_date');
-        expectedCompletionInput.min = this.value;
-    });
+    if (scheduledDateInput) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+        scheduledDateInput.min = minDateTime;
+        // Update expected completion min when scheduled date changes
+        scheduledDateInput.addEventListener('change', function() {
+            const expectedCompletionInput = document.getElementById('expected_completion_date');
+            expectedCompletionInput.min = this.value;
+        });
+    }
 });
 </script>
 {% endblock %}

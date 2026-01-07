@@ -2,6 +2,98 @@
 {% load static %}
 
 {% block content %}
+{% if show_single_wagon and single_wagon %}
+<div class="dashboard-header">
+    <h1><i class="fas fa-trailer"></i> Wagon Details: {{ single_wagon.wagon_number }}</h1>
+    <p>Full maintenance and assignment history for this wagon</p>
+</div>
+
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-info-circle" style="color: #007bff;"></i>
+        Wagon Information
+    </div>
+    <div class="wagon-card">
+        <div class="wagon-name">{{ single_wagon.wagon_number }}</div>
+        <div class="wagon-details"><strong>Type:</strong> {{ single_wagon.get_wagon_type_display }}</div>
+        <div class="wagon-details"><strong>Capacity:</strong> {{ single_wagon.payload_capacity|floatformat:0 }} tons</div>
+        <div class="wagon-details"><strong>Status:</strong> {{ single_wagon.get_status_display }}</div>
+        <div class="wagon-details"><strong>Manufacturer:</strong> {{ single_wagon.manufacturer }}</div>
+        <div class="wagon-details"><strong>Assigned:</strong> {% if single_wagon.is_assigned %}Yes{% else %}No{% endif %}</div>
+    </div>
+</div>
+
+<div class="section-card">
+    <div class="section-title">
+        <i class="fas fa-calendar-alt" style="color: #E31937;"></i>
+        Maintenance History
+    </div>
+    {% if maintenance_schedules %}
+    <div class="table-responsive">
+        <table class="maintenance-table table">
+            <thead>
+                <tr>
+                    <th>Urgency</th>
+                    <th>Reason</th>
+                    <th>Start Date</th>
+                    <th>Expected Completion</th>
+                    <th>Last Maintenance</th>
+                    <th>Days Since</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schedule in maintenance_schedules %}
+                <tr style="border-left: 5px solid {{ schedule.urgency_color }};">
+                    <td>
+                        <span class="urgency-badge" style="background-color: {{ schedule.urgency_color }}; color: white; padding: 5px 10px; border-radius: 15px; font-weight: 600; font-size: 0.85em;">
+                            {{ schedule.urgency_level }}
+                        </span>
+                    </td>
+                    <td>{{ schedule.reason|truncatewords:10 }}</td>
+                    <td>{{ schedule.scheduled_date|date:"Y-m-d H:i" }}</td>
+                    <td>{{ schedule.expected_completion_date|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if schedule.last_maintenance_date %}
+                            {{ schedule.last_maintenance_date|date:"Y-m-d" }}
+                        {% else %}
+                            <span class="text-danger"><i class="fas fa-times"></i> Never</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 600; color: {{ schedule.urgency_color }};">
+                            {{ schedule.days_since_last }} {% if schedule.days_since_last != "Never" %}days{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge {% if schedule.status == 'COMPLETED' %}available{% elif schedule.status == 'IN_PROGRESS' %}maintenance{% else %}ready{% endif %}">
+                            {{ schedule.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'wagon_maintenance_details' schedule.id %}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-times fa-3x"></i>
+        <p>No maintenance history for this wagon</p>
+    </div>
+    {% endif %}
+</div>
+<div class="section-card">
+    <a href="{% url 'wagon_dashboard' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to All Wagons
+    </a>
+</div>
+{% else %}
 <style>
     .dashboard-header {
         background: linear-gradient(135deg, #E31937 0%, #C41230 100%);
@@ -633,7 +725,7 @@
         <i class="fas fa-chart-pie" style="color: #667eea;"></i>
         Wagon Type Distribution
     </div>
-    {% if wagon_types %}
+    {% if wagon_type_distribution %}
     <table class="table">
         <thead>
             <tr>
@@ -642,7 +734,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for wtype in wagon_types %}
+            {% for wtype in wagon_type_distribution %}
             <tr>
                 <td>{{ wtype.wagon_type }}</td>
                 <td><strong>{{ wtype.count }}</strong></td>

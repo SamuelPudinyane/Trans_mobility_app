@@ -539,7 +539,7 @@
                                 {% elif 'Maintenance' in user.role %}role-maintenance
                                 {% elif 'Emergency' in user.role or 'Medical' in user.role or 'Security' in user.role %}role-emergency
                                 {% else %}role-other{% endif %}">
-                                {{ user.role }}
+                                {{ user.role|default:user.role_value|title }}
                             </span>
                         </td>
                         <td>{{ user.employee_number }}</td>
@@ -627,21 +627,116 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span class="status-badge status-active">
-                                <i class="fas fa-check-circle"></i> Active
-                            </span>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <span class="status-badge 
+                                    {% if user.driver_status == 'available' %}status-active
+                                    {% elif user.driver_status == 'on_leave' %}status-pending
+                                    {% elif user.driver_status == 'emergency' %}status-emergency
+                                    {% else %}status-other{% endif %}">
+                                    {% if user.driver_status == 'available' %}
+                                        <i class="fas fa-check-circle"></i> Available
+                                    {% elif user.driver_status == 'on_leave' %}
+                                        <i class="fas fa-plane-departure"></i> On Leave
+                                        {% if user.on_leave_until %}
+                                            <span class="badge bg-warning text-dark ms-2">
+                                                {{ user.on_leave_until|date:'Y-m-d' }} ({{ user.on_leave_until|timeuntil }})
+                                            </span>
+                                        {% endif %}
+                                    {% elif user.driver_status == 'emergency' %}
+                                        <i class="fas fa-exclamation-triangle"></i> Emergency
+                                        {% if user.on_leave_until %}
+                                            <span class="badge bg-warning text-dark ms-2">
+                                                {{ user.on_leave_until|date:'Y-m-d' }} ({{ user.on_leave_until|timeuntil }})
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <i class="fas fa-question-circle"></i> Unknown
+                                    {% endif %}
+                                </span>
+                                <form method="POST" action="{% url 'change_user_status' user.id %}" class="status-form" style="display: block; margin: 0;">
+                                    {% csrf_token %}
+                                    <select name="driver_status" class="form-select form-select-sm status-dropdown" style="height: 32px; min-width: 120px; margin-bottom: 6px;" onchange="handleStatusChange(this)">
+                                        <option value="available" {% if user.driver_status == 'available' %}selected{% endif %}>Available</option>
+                                        <option value="on_leave" {% if user.driver_status == 'on_leave' %}selected{% endif %}>On Leave</option>
+                                        <option value="emergency" {% if user.driver_status == 'emergency' %}selected{% endif %}>Emergency</option>
+                                    </select>
+                                                                        <!-- Date picker modal trigger (hidden input) -->
+                                                                        <input type="hidden" name="on_leave_until" class="on-leave-date">
+                                                                        <!-- Date Picker Modal -->
+                                                                        <div class="modal fade" tabindex="-1" id="datePickerModal-{{ user.id }}" aria-labelledby="datePickerModalLabel-{{ user.id }}" aria-hidden="true">
+                                                                            <div class="modal-dialog modal-dialog-centered">
+                                                                                <div class="modal-content">
+                                                                                    <div class="modal-header">
+                                                                                        <h5 class="modal-title" id="datePickerModalLabel-{{ user.id }}">Select Return Date</h5>
+                                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                    </div>
+                                                                                    <div class="modal-body">
+                                                                                        <input type="date" class="form-control modal-date-input" min="{{ today|default:None }}">
+                                                                                    </div>
+                                                                                    <div class="modal-footer">
+                                                                                        <button type="button" class="btn btn-primary modal-date-confirm">Set Date</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                </form>
+                            <script>
+                            // Show date picker only when 'On Leave' is selected
+                            function handleStatusChange(select) {
+                                const form = select.closest('form');
+                                const dateInput = form.querySelector('.on-leave-date');
+                                console.log('[DEBUG] handleStatusChange called, value:', select.value);
+                                if (select.value === 'on_leave' || select.value === 'emergency') {
+                                    // Show modal for this user
+                                    let userId = form.action.split('/').filter(Boolean).pop();
+                                    const modal = document.getElementById('datePickerModal-' + userId);
+                                    const modalDateInput = modal.querySelector('.modal-date-input');
+                                    const confirmBtn = modal.querySelector('.modal-date-confirm');
+                                    // Reset date input
+                                    modalDateInput.value = '';
+                                    modalDateInput.min = new Date().toISOString().split('T')[0];
+                                    // Show modal (Bootstrap 5)
+                                    var bsModal = new bootstrap.Modal(modal);
+                                    bsModal.show();
+                                    confirmBtn.onclick = function() {
+                                        if (!modalDateInput.value) {
+                                            modalDateInput.classList.add('is-invalid');
+                                            return;
+                                        }
+                                        dateInput.value = modalDateInput.value;
+                                        bsModal.hide();
+                                        form.submit();
+                                    };
+                                } else {
+                                    form.submit();
+                                    return;
+                                }
+                            }
+                            // On page load, show date picker if status is already on_leave
+                            document.addEventListener('DOMContentLoaded', function() {
+                                // No need to show/hide inline date input anymore
+                                // Optionally, clear modal date input on page load
+                                document.querySelectorAll('.modal-date-input').forEach(function(input) {
+                                    input.value = '';
+                                });
+                                console.log('[DEBUG] DOMContentLoaded for status forms');
+                            });
+                            </script>
+                            </div>
                         </td>
                         <td>
-                            <form method="POST" action="{% url 'deactivate_user' user.id %}" style="display: inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-deactivate" 
-                                        onclick="return confirm('Deactivate account for {{ user.email }}? They will not be able to log in.')">
-                                    <i class="fas fa-ban"></i> Deactivate
-                                </button>
-                            </form>
-                            <a href="{% url 'edit_user_admin' user.id %}" class="btn btn-edit">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <form method="POST" action="{% url 'deactivate_user' user.id %}" style="display: inline; margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-deactivate" 
+                                            onclick="return confirm('Deactivate account for {{ user.email }}? They will not be able to log in.')">
+                                        <i class="fas fa-ban"></i> Deactivate
+                                    </button>
+                                </form>
+                                <a href="{% url 'edit_user_admin' user.id %}" class="btn btn-edit" style="margin: 0;">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

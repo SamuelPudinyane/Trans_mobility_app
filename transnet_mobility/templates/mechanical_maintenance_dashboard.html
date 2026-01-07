@@ -23,7 +23,26 @@
     <div class="row mb-4">
         <div class="col-12">
             <h2 class="mb-3">
-                <i class="fas fa-tools me-2" style="color: #E31937;"></i>Mechanical Maintenance Dashboard
+                <i class="fas fa-tools me-2" style="color: #E31937;"></i>
+                {% if Account_type == 'MECHANICAL_MAINTENANCE_TEAM' %}
+                    Mechanical Maintenance Dashboard
+                {% elif Account_type == 'ELECTRICAL_MAINTENANCE_TEAM' %}
+                    Electrical Maintenance Dashboard
+                {% elif Account_type == 'EMERGENCY_RESPONSE_TEAM' %}
+                    Emergency Response Dashboard
+                {% elif Account_type == 'SECURITY_TEAM' %}
+                    Security Team Dashboard
+                {% elif Account_type == 'MEDICAL_TEAM' %}
+                    Medical Team Dashboard
+                {% elif Account_type == 'TOWING_SERVICE' %}
+                    Towing Service Dashboard
+                {% elif Account_type == 'STAFF' %}
+                    Staff Dashboard
+                {% elif Account_type == 'OTHER' %}
+                    Operations Dashboard
+                {% else %}
+                    Maintenance Dashboard
+                {% endif %}
             </h2>
             <p class="text-muted">Track and manage locomotive and cargo maintenance operations</p>
         </div>
@@ -39,6 +58,7 @@
                             <h6 class="text-muted mb-1">Locomotives</h6>
                             <h3 class="mb-0">{{ locomotives_under_maintenance }}</h3>
                             <small class="text-muted">Under Maintenance</small>
+                                <h3 class="mb-0" id="locomotives-under-maintenance">{{ locomotives_under_maintenance }}</h3>
                         </div>
                         <div class="bg-danger bg-opacity-10 p-3 rounded">
                             <i class="fas fa-train text-danger fa-2x"></i>
@@ -56,6 +76,7 @@
                             <h6 class="text-muted mb-1">Pending Tasks</h6>
                             <h3 class="mb-0">{{ pending_tasks }}</h3>
                             <small class="text-muted">Not Started</small>
+                                <h3 class="mb-0" id="pending-tasks">{{ pending_tasks }}</h3>
                         </div>
                         <div class="bg-warning bg-opacity-10 p-3 rounded">
                             <i class="fas fa-clock text-warning fa-2x"></i>
@@ -90,6 +111,7 @@
                             <h6 class="text-muted mb-1">Completed Today</h6>
                             <h3 class="mb-0">{{ completed_today }}</h3>
                             <small class="text-muted">Tasks Done</small>
+                                <h3 class="mb-0" id="completed-today">{{ completed_today }}</h3>
                         </div>
                         <div class="bg-success bg-opacity-10 p-3 rounded">
                             <i class="fas fa-check-circle text-success fa-2x"></i>
@@ -127,13 +149,13 @@
                                 {% for task in in_progress_tasks %}
                                 <tr>
                                     <td>
-                                        <strong>
-                                            {% if task.item_type == 'LOCOMOTIVE' %}
-                                                {{ task.locomotive.locomotive|default:"Unnamed" }}
-                                            {% else %}
-                                                {{ task.cargo.cargo_name|default:"Unnamed" }}
-                                            {% endif %}
-                                        </strong>
+                                        {% if task.item_type == 'LOCOMOTIVE' %}
+                                            {{ task.locomotive.locomotive|default:"Unnamed Locomotive" }}
+                                        {% elif task.item_type == 'WAGON' and task.wagon %}
+                                            {{ task.wagon.wagon_name|default:"Unnamed Wagon" }}
+                                        {% else %}
+                                            {{ task.cargo.cargo_name|default:"Unnamed Cargo" }}
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <span class="badge {% if task.item_type == 'LOCOMOTIVE' %}bg-primary{% else %}bg-info{% endif %}">
@@ -175,6 +197,7 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
+                                    <th>Urgency</th>
                                     <th>Item</th>
                                     <th>Type</th>
                                     <th>Reason</th>
@@ -189,16 +212,37 @@
                                 <tr>
                                     <td><strong>#{{ task.id }}</strong></td>
                                     <td>
+                                        <span class="badge"
+                                            style="background-color: {{ task.urgency_color }}; color: white;">
+                                            {{ task.urgency_level|title }}
+                                        </span>
+                                    </td>
+                                    <td>
                                         {% if task.item_type == 'LOCOMOTIVE' %}
                                             {{ task.locomotive.locomotive|default:"Unnamed Locomotive" }}
+                                        {% elif task.item_type == 'WAGON' and task.wagon %}
+                                            {{ task.wagon.wagon_name|default:"Unnamed Wagon" }}
                                         {% else %}
                                             {{ task.cargo.cargo_name|default:"Unnamed Cargo" }}
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge task-badge {% if task.item_type == 'LOCOMOTIVE' %}bg-primary{% else %}bg-info{% endif %}">
-                                            <i class="fas {% if task.item_type == 'LOCOMOTIVE' %}fa-train{% else %}fa-box{% endif %}"></i>
-                                            {{ task.item_type }}
+                                        <span class="badge task-badge 
+                                            {% if task.item_type == 'LOCOMOTIVE' %}bg-primary
+                                            {% elif task.item_type == 'WAGON' %}bg-warning text-dark
+        <script src="{% static 'dashboard_status_poll.js' %}"></script>
+                                            {% else %}bg-info
+                                            {% endif %}">
+                                            <i class="fas 
+                                                {% if task.item_type == 'LOCOMOTIVE' %}fa-train
+                                                {% elif task.item_type == 'WAGON' %}fa-cube
+                                                {% else %}fa-box
+                                                {% endif %}"></i>
+                                            {% if task.item_type == 'WAGON' and task.wagon %}
+                                                {{ task.wagon.get_wagon_type_display|default:"Wagon" }}
+                                            {% else %}
+                                                {{ task.item_type }}
+                                            {% endif %}
                                         </span>
                                     </td>
                                     <td>{{ task.reason|truncatewords:6 }}</td>
@@ -226,21 +270,32 @@
                                     <td>
                                         <a href="{% url 'mechanical_maintenance_update' task.id %}" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-arrow-right"></i> Work On
-                                        </a>
+                                        <td>
+                                            {% if task.last_maintenance_date and task.wagon %}
+                                                <a href="{% url 'wagon_maintenance_details' task.wagon.id %}">
+                                                    {{ task.last_maintenance_date|date:"Y-m-d H:i" }}
+                                                </a>
+                                            {% elif task.last_maintenance_date %}
+                                                {{ task.last_maintenance_date|date:"Y-m-d H:i" }}
+                                            {% else %}
+                                                Never
+                                            {% endif %}
+                                        </td>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9">
+                                        <div class="text-center text-muted py-5">
+                                            <i class="fas fa-check-circle fa-4x mb-3" style="color: #E31937; opacity: 0.2;"></i>
+                                            <p>No active maintenance tasks</p>
+                                            <small>All clear! No scheduled or in-progress maintenance.</small>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    {% else %}
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-check-circle fa-4x mb-3" style="color: #E31937; opacity: 0.2;"></i>
-                        <p>No active maintenance tasks</p>
-                        <small>All clear! No scheduled or in-progress maintenance.</small>
-                    </div>
-                    {% endif %}
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>

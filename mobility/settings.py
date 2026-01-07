@@ -1,3 +1,10 @@
+# Email backend for development (prints emails to console)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_HOST = 'localhost'
+# EMAIL_PORT = 25
+# EMAIL_USE_TLS = False
+# EMAIL_HOST_USER = ''
+# EMAIL_HOST_PASSWORD = ''
 """
 Django settings for mobility project.
 

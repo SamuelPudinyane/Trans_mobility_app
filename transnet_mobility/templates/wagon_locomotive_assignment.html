@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Assign Locomotives to Wagon - Transnet Mobility{% endblock %}
+{% block content %}
+<div class="assignment-container">
+    <div class="page-header">
+        <h1><i class="fas fa-link"></i> Assign Locomotives to Wagon</h1>
+        <p>🚃 Assign one or more locomotives to each wagon. Remove assignments as needed. See total power per wagon.</p>
+    </div>
+
+    <!-- Assignment Form -->
+    <div class="assignment-form-card">
+        <h2 class="section-title"><i class="fas fa-plus-circle"></i> Assign Locomotives</h2>
+        <form method="post" action="{% url 'wagon_locomotive_assignment' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="assign">
+            <div class="locomotive-select-group">
+                <label for="wagonSelect"><i class="fas fa-cube"></i> Select Wagon</label>
+                <select class="form-select" id="wagonSelect" name="wagon_id" required>
+                    <option value="" selected disabled>Choose a wagon...</option>
+                    {% for w in wagons %}
+                        <option value="{{ w.id }}">{{ w.wagon_number }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted mt-2 d-block"><i class="fas fa-info-circle"></i> Select the wagon to assign locomotives to</small>
+            </div>
+            <div class="locomotive-checkbox-list" style="margin: 16px 0;">
+                <label><strong>Select Locomotive(s):</strong></label>
+                <div class="d-flex flex-wrap" style="gap: 16px;">
+                    {% for loco in locomotives %}
+                        <div class="form-check" style="min-width: 180px;">
+                            <input type="checkbox" class="form-check-input loco-checkbox" name="locomotive_ids[]" value="{{ loco.id }}" id="loco-{{ loco.id }}">
+                            <label class="form-check-label" for="loco-{{ loco.id }}">
+                                <strong>{{ loco.locomotive }}</strong>
+                                <span class="text-muted ms-2">{{ loco.tractive_effort|default:loco.power|default:"N/A" }}</span>
+                            </label>
+                        </div>
+                    {% empty %}
+                        <span class="text-muted">No available locomotives found.</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="submit-btn"><i class="fas fa-check-circle"></i> Assign Selected Locomotives</button>
+        </form>
+    </div>
+
+    <!-- Current Assignments -->
+    <div class="assignments-card">
+        <h2 class="section-title"><i class="fas fa-list"></i> Current Locomotive Assignments per Wagon</h2>
+        <div class="table-responsive">
+            <table class="assignments-table table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-cube"></i> Wagon Number</th>
+                        <th><i class="fas fa-train"></i> Assigned Locomotives</th>
+                        <th><i class="fas fa-user"></i> Driver(s)</th>
+                        <th><i class="fas fa-bolt"></i> Total Power</th>
+                        <th><i class="fas fa-cog"></i> Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wagon in wagons %}
+                    <tr>
+                        <td><strong>{{ wagon.wagon_number }}</strong></td>
+                        <td>
+                            {% for loco in wagon.get_assigned_locomotives %}
+                                <span class="badge bg-secondary">{{ loco.locomotive }}</span>
+                            {% empty %}
+                                <span class="text-muted">No locomotives assigned</span>
+                            {% endfor %}
+                            <!-- Add Locomotive Form -->
+                            <form method="post" action="{% url 'wagon_locomotive_assignment' %}" style="margin-top: 8px;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="assign">
+                                <input type="hidden" name="wagon_id" value="{{ wagon.id }}">
+                                <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                                    {% for loco in locomotives %}
+                                        {% if loco not in wagon.get_assigned_locomotives %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="locomotive_ids[]" value="{{ loco.id }}" id="add-loco-{{ wagon.id }}-{{ loco.id }}">
+                                                <label class="form-check-label" for="add-loco-{{ wagon.id }}-{{ loco.id }}">{{ loco.locomotive }}</label>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Add Selected</button>
+                                </div>
+                            </form>
+                        </td>
+                        <td class="driver-cell">
+                            {% for loco in wagon.get_assigned_locomotives %}
+                                {% with drivers=loco.locomotiveassignment_set.all %}
+                                    {% for assignment in drivers %}
+                                        <span class="badge bg-info">{{ assignment.driver.get_full_name|default:assignment.driver.email }}</span>
+                                        {% if assignment.assistant %}
+                                            <span class="badge bg-warning text-dark">{{ assignment.assistant.get_full_name|default:assignment.assistant.email }}</span>
+                                        {% endif %}
+                                    {% empty %}
+                                        <span class="text-muted">No driver</span>
+                                    {% endfor %}
+                                {% endwith %}
+                            {% empty %}
+                                <span class="text-muted">No locomotives</span>
+                            {% endfor %}
+                        </td>
+                        <td><strong>{{ wagon.get_total_locomotive_power|floatformat:2 }}</strong></td>
+                        <td>
+                            {% for assignment in wagon.locomotive_assignments.all %}
+                            <form method="post" style="display: inline;" onsubmit="return confirm('Remove this locomotive assignment?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="unassign">
+                                <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+                                <button type="submit" class="unassign-btn"><i class="fas fa-unlink"></i> Remove {{ assignment.locomotive.locomotive }}</button>
+                            </form>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">No wagons found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Ensure DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Example: Highlight assigned locomotives and show driver names if available
+    // This assumes you have driver info in context (add if needed)
+    const assignmentRows = document.querySelectorAll('.assignments-table tbody tr');
+    assignmentRows.forEach(row => {
+        // Highlight assigned locomotives
+        row.querySelectorAll('.badge.bg-secondary').forEach(badge => {
+            badge.style.backgroundColor = '#007bff';
+            badge.style.color = '#fff';
+        });
+        // If you have driver info, display it (example)
+        const driverCell = row.querySelector('.driver-cell');
+        if (driverCell && driverCell.dataset.driverName) {
+            driverCell.innerHTML = `<span class="badge bg-info">${driverCell.dataset.driverName}</span>`;
+        }
+    });
+    // Optionally, add event listeners for dynamic UI updates after assignment/unassignment
+});
+</script>
+{% endblock %}

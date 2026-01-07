@@ -1,5 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mt-3" style="border-left: 4px solid #E31937;">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
 
 {% block title %}Assign Locomotive to Driver - Transnet Mobility{% endblock %}
 {% block content %}
@@ -330,24 +338,40 @@
             <div class="locomotive-select-group">
                 <label for="locomotiveSelect">
                     <i class="fas fa-train"></i>
-                    Select Locomotive
+                    Select Locomotive(s)
                 </label>
-                <select class="form-select" id="locomotiveSelect" name="locomotive_id" required>
-                    <option value="" selected disabled>Choose a locomotive...</option>
-                    {% for loco in locomotives %}
-                        <option value="{{ loco.id }}">
-                            {{ loco.name }} 
-                            {% if loco.wagon_count > 0 %}
-                                (✓ {{ loco.wagon_count }} wagon{{ loco.wagon_count|pluralize }})
+                <!-- Bootstrap Select multi-select dropdown with checkboxes -->
+                <select class="form-select selectpicker" id="locomotiveSelect" name="locomotive_ids" multiple data-live-search="true" data-actions-box="true" data-selected-text-format="count > 2" title="Choose locomotive(s)..." required>
+                    {% if locomotives and locomotives|length > 0 %}
+                        {% for loco in locomotives %}
+                            {% if loco.locomotive %}
+                                <option value="{{ loco.id }}">
+                                    {{ loco.locomotive }}
+                                    {% if loco.wagon_count > 0 %}
+                                        (✓ {{ loco.wagon_count }} wagon{{ loco.wagon_count|pluralize }})
+                                    {% else %}
+                                        (⚠ No wagons - optional)
+                                    {% endif %}
+                                </option>
                             {% else %}
-                                (⚠ No wagons - optional)
+                                <!-- Optionally, show a placeholder for unnamed locos -->
+                                <option value="{{ loco.id }}">[Unnamed Locomotive]</option>
                             {% endif %}
-                        </option>
-                    {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <option disabled>No locomotives available</option>
+                    {% endif %}
                 </select>
                 <small class="text-muted mt-2 d-block">
-                    <i class="fas fa-info-circle"></i> Select the locomotive to assign drivers to. <strong>Note:</strong> Wagons are optional but recommended.
+                    <i class="fas fa-info-circle"></i> Select one or more locomotives to assign to the selected drivers.
                 </small>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (window.jQuery && $('.selectpicker').length) {
+                        $('.selectpicker').selectpicker();
+                    }
+                });
+            </script>
             </div>
             
             <div class="drivers-table-container">
@@ -355,26 +379,36 @@
                     <thead>
                         <tr>
                             <th><i class="fas fa-user"></i> Full Name</th>
-                            <th><i class="fas fa-id-badge"></i> Role</th>
+                            <th><i class="fas fa-link"></i> Paired Status</th>
                             <th><i class="fas fa-check-square"></i> Select</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for d in available_drivers %}
-                        <tr>
-                            <td>
-                                <strong>{{ d.first_name }} {{ d.last_name }}</strong>
-                                <br>
-                                <small class="text-muted">{{ d.email }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-primary">Driver</span>
-                            </td>
-                            <td>
-                                <input type="checkbox" class="form-check-input driver-checkbox" name="driver_ids[]" value="{{ d.User_id }}" id="drv-{{ d.User_id }}">
-                                <label for="drv-{{ d.User_id }}" style="cursor: pointer; margin-left: 8px;">Assign</label>
-                            </td>
-                        </tr>
+                        {% regroup available_drivers by is_paired as driver_groups %}
+                        {% for group in driver_groups %}
+                            {% for d in group.list %}
+                                <tr {% if group.grouper %}style="background-color: #eaf7ff;"{% endif %}>
+                                    <td>
+                                        <strong>Driver:</strong> {{ d.first_name }} {{ d.last_name }} <small class="text-muted">({{ d.email }})</small><br>
+                                        {% if d.assistant_name %}
+                                            <strong>Assistant:</strong> {{ d.assistant_name }} <small class="text-muted">({{ d.assistant_email }})</small>
+                                        {% else %}
+                                            <strong>Assistant:</strong> <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if group.grouper %}
+                                            <span class="badge bg-info">Paired</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">Single</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input driver-checkbox" name="driver_ids[]" value="{{ d.User_id }}" id="drv-{{ d.User_id }}">
+                                        <label for="drv-{{ d.User_id }}" style="cursor: pointer; margin-left: 8px;">Assign</label>
+                                    </td>
+                                </tr>
+                            {% endfor %}
                         {% empty %}
                         <tr>
                             <td colspan="3">
@@ -387,6 +421,40 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Scheduled Date Selection -->
+            <div class="locomotive-select-group mt-3">
+                <label for="scheduledDateSelect">
+                    <i class="fas fa-calendar-alt"></i>
+                    Select Scheduled Date
+                </label>
+                <select class="form-select" id="scheduledDateSelect" name="selected_date" required>
+                    <option value="" selected disabled>Choose a date...</option>
+                    {% for date in available_dates %}
+                        <option value="{{ date|date:'Y-m-d' }}">{{ date|date:'M j, Y' }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fas fa-info-circle"></i> Select the scheduled date for assignment. Only dates for selected drivers are shown.
+                </small>
+            </div>
+
+            <!-- Assistant Selection -->
+            <div class="locomotive-select-group mt-3">
+                <label for="assistantSelect">
+                    <i class="fas fa-user-friends"></i>
+                    Select Assistant (optional)
+                </label>
+                <select class="form-select" id="assistantSelect" name="assistant_id">
+                    <option value="" selected>Choose an assistant...</option>
+                    {% for assistant in available_assistants %}
+                        <option value="{{ assistant.User_id }}">{{ assistant.first_name }} {{ assistant.last_name }} ({{ assistant.email }})</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fas fa-info-circle"></i> Only available assistants for the selected date are shown.
+                </small>
             </div>
             
             {% if available_drivers %}
@@ -418,9 +486,8 @@
             <table class="assignments-table table">
                 <thead>
                     <tr>
-                        <th><i class="fas fa-user"></i> Driver</th>
-                        <th><i class="fas fa-envelope"></i> Email</th>
-                        <th><i class="fas fa-train"></i> Locomotive</th>
+                        <th><i class="fas fa-train"></i> Locomotive(s)</th>
+                        <th><i class="fas fa-user-friends"></i> Driver & Assistant</th>
                         <th><i class="fas fa-clock"></i> Assigned At</th>
                         <th><i class="fas fa-cog"></i> Actions</th>
                     </tr>
@@ -429,23 +496,27 @@
                     {% for a in assignments %}
                     <tr>
                         <td>
-                            <strong>{{ a.driver_name }}</strong>
+                            {% for loco_name in a.locomotive_names %}
+                                <span class="badge" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); font-size: 13px; margin-bottom:2px; display:inline-block;">
+                                    {{ loco_name }}
+                                </span>{% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
                         </td>
                         <td>
-                            <small class="text-muted">{{ a.driver_email }}</small>
-                        </td>
-                        <td>
-                            <span class="badge" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); font-size: 13px;">
-                                {{ a.locomotive_name }}
-                            </span>
+                            <div>
+                                <strong>Driver:</strong> {{ a.driver_name }} <small class="text-muted">({{ a.driver_email }})</small><br>
+                                <strong>Assistant:</strong>
+                                {% if a.assistant_name %}
+                                    {{ a.assistant_name }} <small class="text-muted">({{ a.assistant_email }})</small>
+                                {% else %}
+                                    <span class="text-muted">None</span>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
                             <small>{{ a.assigned_at|date:"M d, Y H:i" }}</small>
                         </td>
                         <td>
-                            <button type="button" class="btn-reassign" data-bs-toggle="modal" data-bs-target="#reassignModal" data-assignment-id="{{ a.id }}" data-current-loco-id="{{ a.locomotive_id }}">
-                                <i class="fas fa-sync-alt"></i> Reassign
-                            </button>
                             <button type="button" class="btn-remove" data-bs-toggle="modal" data-bs-target="#unassignModal" data-assignment-id="{{ a.id }}">
                                 <i class="fas fa-trash"></i> Remove
                             </button>
@@ -453,7 +524,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5">
+                        <td colspan="4">
                             <div class="empty-state">
                                 <i class="fas fa-clipboard-list"></i>
                                 <p>No assignments yet. Use the form above to assign drivers to locomotives.</p>
@@ -500,22 +571,7 @@
             console.error('Unassign modal element not found!');
         }
 
-        var reassignModal = document.getElementById('reassignModal');
-        console.log('Reassign modal element:', reassignModal);
-        if(reassignModal){
-            reassignModal.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget;
-                var assignmentId = button.getAttribute('data-assignment-id');
-                var currentLoco = button.getAttribute('data-current-loco-id');
-                console.log('Reassign modal opening with assignment ID:', assignmentId, 'current loco:', currentLoco);
-                document.getElementById('reassign-assignment-id').value = assignmentId;
-                // set the select to current loco so user can pick a different one
-                var sel = document.getElementById('newLocomotive');
-                if(sel) sel.value = currentLoco;
-            });
-        } else {
-            console.error('Reassign modal element not found!');
-        }
+        // Reassign modal and related JS removed
         
         // Debug form submission for unassign modal
         var unassignForm = document.querySelector('#unassignModal form');
@@ -536,48 +592,7 @@
 </script>
 
 <!-- Reassign Modal -->
-<div class="modal fade" id="reassignModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 12px; overflow: hidden; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-sync-alt"></i> Reassign Locomotive
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post" action="{% url 'driver_assignment' %}">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="reassign">
-                <input type="hidden" name="assignment_id" id="reassign-assignment-id">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="newLocomotive" class="form-label" style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas fa-train" style="color: #E31937;"></i>
-                            Select New Locomotive
-                        </label>
-                        <select class="form-select" id="newLocomotive" name="new_locomotive_id" required style="padding: 12px; border: 2px solid #e9ecef; border-radius: 8px;">
-                            <option value="" selected disabled>Choose a locomotive...</option>
-                            {% for loco in locomotives %}
-                                <option value="{{ loco.id }}">{{ loco.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <small class="text-muted mt-2 d-block">
-                            <i class="fas fa-info-circle"></i> Select the new locomotive for this driver
-                        </small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 20px;">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                    <button type="submit" class="btn-submit" style="border-radius: 8px; padding: 10px 20px;">
-                        <i class="fas fa-check"></i> Confirm Reassignment
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- Reassign modal removed -->
 
 <!-- Unassign Confirmation Modal -->
 <div class="modal fade" id="unassignModal" tabindex="-1" aria-hidden="true">
