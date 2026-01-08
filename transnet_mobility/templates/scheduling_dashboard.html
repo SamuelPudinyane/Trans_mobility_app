@@ -144,7 +144,7 @@
       const driverSelect = document.getElementById('driverSelect');
       const assistantSelect = document.getElementById('assistantSelect');
       driverSelect.innerHTML = '';
-      assistantSelect.innerHTML = '<option value="-- none --</option>';
+      assistantSelect.innerHTML = '<option value="-- none --">-- none --</option>';
       drivers.forEach(d => {
         const name = (d.first_name ? d.first_name : '') + (d.last_name ? ' ' + d.last_name : '');
         const opt = document.createElement('option');
@@ -155,7 +155,7 @@
       // Only show assistants in same area as selected driver
       driverSelect.addEventListener('change', function() {
         const selectedDriver = drivers.find(x => x.User_id === driverSelect.value);
-        assistantSelect.innerHTML = '<option value="-- none --</option>';
+        assistantSelect.innerHTML = '<option value="-- none --">-- none --</option>';
         if (!selectedDriver) return;
         drivers.forEach(d => {
           if (d.User_id !== selectedDriver.User_id && d.current_location === selectedDriver.current_location) {
@@ -226,10 +226,18 @@
     async function saveSchedule(e) {
       e.preventDefault();
       const id = document.getElementById('scheduleId').value;
+      const dateValue = document.getElementById('dateInput').value;
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (dateValue < todayStr) {
+        const alert = document.getElementById('modalAlert');
+        alert.innerText = 'Cannot schedule for a past date. Please select today or a future date.';
+        alert.classList.remove('d-none');
+        return;
+      }
       const payload = {
         driver: document.getElementById('driverSelect').value,
         assistant: document.getElementById('assistantSelect').value || null,
-        date: document.getElementById('dateInput').value,
+        date: dateValue,
         shift_type: document.getElementById('shiftSelect').value,
         status: document.getElementById('statusSelect').value
       };
@@ -261,21 +269,29 @@
           let errMsg = '';
           try {
             const errJson = JSON.parse(errText);
-            if (typeof errJson === 'string') {
-              errMsg = errJson;
-            } else if (errJson && typeof errJson === 'object') {
-              if (errJson.non_field_errors) {
-                errMsg = errJson.non_field_errors.join(' ');
-              } else if (errJson.error) {
-                errMsg = errJson.error;
-              } else {
-                errMsg = JSON.stringify(errJson);
+            // Handle DRF validation errors
+            if (errJson.non_field_errors && Array.isArray(errJson.non_field_errors)) {
+              errMsg = errJson.non_field_errors.join(' ');
+            } else if (errJson.error) {
+              errMsg = errJson.error;
+            } else if (typeof errJson === 'object') {
+              // Handle field-specific errors
+              const errors = [];
+              for (const [field, messages] of Object.entries(errJson)) {
+                if (Array.isArray(messages)) {
+                  errors.push(`${field}: ${messages.join(', ')}`);
+                } else {
+                  errors.push(`${field}: ${messages}`);
+                }
               }
+              errMsg = errors.join('; ');
+            } else if (typeof errJson === 'string') {
+              errMsg = errJson;
             } else {
-              errMsg = errText;
+              errMsg = 'An error occurred while saving the schedule.';
             }
           } catch {
-            errMsg = errText || 'Unknown error';
+            errMsg = errText || 'An unexpected error occurred.';
           }
           const alert = document.getElementById('modalAlert');
           alert.innerText = errMsg;
@@ -287,7 +303,7 @@
         calendar.refetchEvents();
       } catch (err) {
         const alert = document.getElementById('modalAlert');
-        alert.innerText = (err && err.message) ? err.message : (typeof err === 'string' ? err : JSON.stringify(err));
+        alert.innerText = 'JS/fetch error: ' + ((err && err.message) ? err.message : (typeof err === 'string' ? err : JSON.stringify(err)));
         alert.classList.remove('d-none');
       }
     }
@@ -351,5 +367,6 @@
       document.getElementById('deleteBtn').addEventListener('click', deleteSchedule);
     });
     </script>
-
-    {% endblock %}
+  </div>
+</div>
+{% endblock %}

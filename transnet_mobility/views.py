@@ -1,55 +1,50 @@
-from django.http import JsonResponse
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout as django_logout
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods, require_POST
-from django.core.mail import send_mail
-from django.urls import reverse
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, login
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
-from django.db import IntegrityError
-from django.db.models import Count, Q
+# Standard library imports
 import json
-from decimal import Decimal
-from datetime import datetime, date
-from django.contrib import messages
 import logging
 import os
+from collections import defaultdict
+from datetime import datetime, date, timedelta
+from decimal import Decimal
+from math import radians, cos, sin, asin, sqrt
+
+# Third-party imports
 import requests
-from datetime import timedelta
+
+# Django core imports
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout as auth_logout, get_user_model
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.db import IntegrityError
+from django.db.models import Count, Q, Avg, Sum, Max, Min, F
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.utils import timezone
-from .user_dummy_data import users
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
+
+# Django REST Framework imports
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+
+# Local application imports
+from .geocode_utils import get_location_name
 from .models import (
     UserLocation, CustomUser, LocomotiveSpec, CargoSpec, WheelsetSpec, WagonSpec,
-    RoutePreferenceSpec, LocomotiveAssignment, FuelSpec, DriverRequest, DispatchLog, DispatchNotification,
-    DriverAssignmentNotification, MaintenanceSchedule, MaintenanceStatusUpdate, LocomotiveWagonAssignment,
-    PrivateMessage, MessageRecipient, OptimizerRequest, OptimizerResponse, OptimizationLog, Schedule
+    RoutePreferenceSpec, LocomotiveAssignment, FuelSpec, DriverRequest, DispatchLog, 
+    DispatchNotification, DriverAssignmentNotification, MaintenanceSchedule, 
+    MaintenanceStatusUpdate, LocomotiveWagonAssignment, PrivateMessage, MessageRecipient, 
+    OptimizerRequest, OptimizerResponse, OptimizationLog, Schedule
 )
-from django.utils import timezone
-from math import radians, cos, sin, asin, sqrt
+from .serializers import (
+    DriverSerializer, LocomotiveSerializer, LocomotiveAssignmentSerializer, ScheduleSerializer
+)
+from .user_dummy_data import users
 from transnet_mobility.create_or_update_schedule import create_or_update_schedule
-from .geocode_utils import get_location_name
-from .models import CargoSpec, WheelsetSpec, WagonSpec
-from .models import RoutePreferenceSpec, LocomotiveAssignment
-from .models import FuelSpec, DriverRequest, DispatchLog, DispatchNotification
-from .models import DriverAssignmentNotification
-from .models import MaintenanceSchedule, MaintenanceStatusUpdate, LocomotiveWagonAssignment
-from .models import PrivateMessage, MessageRecipient
-from .models import OptimizerRequest, OptimizerResponse, OptimizationLog
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from math import radians, cos, sin, asin, sqrt
-from transnet_mobility.serializers import ScheduleSerializer
+
+# Initialize User model
 User = get_user_model()
 
 def logout(request):
@@ -286,6 +281,7 @@ def fuel_matrics(request):
         return redirect('login')
 
 
+@login_required
 @login_required
 def scheduling_dashboard(request):
     """Render the scheduling dashboard for admins, showing calendar and driver status."""
@@ -4621,8 +4617,6 @@ def locomotive_wagon_assignment(request):
 
 
     # --- Dropdown and assignment logic ---
-    from collections import defaultdict
-    from django.utils import timezone
     today = timezone.now().date()
     # Date filter support
     date_filter = request.GET.get('date', '')
@@ -4775,33 +4769,22 @@ def locomotive_wagon_assignment(request):
             return redirect('locomotive_wagon_assignment')
 
 
-    # --- Group assignments by unique locomotive pairs (for filter and table) ---
-    from collections import defaultdict
+
+    # --- Flat assignment list for table (classic version) ---
     assignments_qs = LocomotiveWagonAssignment.objects.select_related('locomotive', 'wagon', 'assigned_by').order_by('-assigned_at')
-    # Map: frozenset of loco IDs -> list of assignment dicts
-    group_assignments = defaultdict(list)
-    # Map: frozenset of loco IDs -> display name (comma separated)
-    group_display_names = {}
-
-    # Calculate totals for each group
-    group_assignments_with_totals = {}
-    for group_key, group in group_assignments.items():
-        total_tare = sum(item['tare_weight'] for item in group)
-        total_payload = sum(item['payload_capacity'] for item in group)
-        total_weight = sum(item['total_weight'] for item in group)
-        group_assignments_with_totals[group_key] = {
-            'assignments': group,
-            'total_tare': total_tare,
-            'total_payload': total_payload,
-            'total_weight': total_weight,
-        }
-
-    # Prepare filter options: unique locomotive pairings
-    filter_options = []
-    for group_key, display_name in group_display_names.items():
-        filter_options.append({
-            'key': ','.join(str(i) for i in sorted(group_key)),
-            'display': display_name,
+    assignment_list = []
+    for assignment in assignments_qs:
+        assignment_list.append({
+            'locomotive_id': assignment.locomotive.id if assignment.locomotive else None,
+            'locomotive_name': assignment.locomotive.locomotive if assignment.locomotive else '',
+            'wagon_number': assignment.wagon.wagon_number if assignment.wagon else '',
+            'wagon_type': assignment.wagon.wagon_type if assignment.wagon else '',
+            'tare_weight': float(assignment.wagon.tare_weight or 0) if assignment.wagon else 0,
+            'payload_capacity': float(assignment.wagon.payload_capacity or 0) if assignment.wagon else 0,
+            'total_weight': (float(assignment.wagon.tare_weight or 0) + float(assignment.wagon.payload_capacity or 0)) if assignment.wagon else 0,
+            'assigned_at': assignment.assigned_at,
+            'assigned_by': assignment.assigned_by.username if assignment.assigned_by else '',
+            'assignment_id': assignment.id,
         })
 
     available_wagons = WagonSpec.objects.filter(is_active=True, status='AVAILABLE', is_assigned=False)
@@ -4896,8 +4879,8 @@ def locomotive_wagon_assignment(request):
         'locomotive_filter': locomotive_filter,
         'wagons': wagons,
         'locomotives_list': locomotives,  # Only use this for the dropdown
-        'group_assignments': group_assignments_with_totals,  # For table display
-        'filter_options': filter_options,  # For filter dropdown
+        'assignment_list': assignment_list,  # Flat assignment list for table display
+
         'loco_summaries': loco_summaries,
         'date_filter': date_filter,
     }
@@ -5211,9 +5194,6 @@ def wagon_maintenance_details(request, maintenance_id):
 
 # ========== OPTIMIZER API ENDPOINTS ==========
 
-from datetime import datetime
-from django.db.models import Avg, Sum, Max, Min, F
-
 # Configure external optimizer endpoint (can be moved to settings)
 OPTIMIZER_API_BASE_URL = os.getenv('OPTIMIZER_API_URL', 'http://external-optimizer-api.com/api/v1')
 OPTIMIZER_API_KEY = os.getenv('OPTIMIZER_API_KEY', 'your-api-key-here')
@@ -5380,10 +5360,6 @@ def send_scheduling_to_optimizer_and_bi():
 
 # --- API VIEWSETS ---
 
-from rest_framework import viewsets
-from .models import CustomUser, LocomotiveSpec, LocomotiveAssignment, Schedule
-from .serializers import DriverSerializer, LocomotiveSerializer, LocomotiveAssignmentSerializer, ScheduleSerializer
-
 class DriverViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.filter(role='DRIVER')
     serializer_class = DriverSerializer
@@ -5396,16 +5372,85 @@ class LocomotiveAssignmentViewSet(viewsets.ModelViewSet):
     queryset = LocomotiveAssignment.objects.all()
     serializer_class = LocomotiveAssignmentSerializer
 
+
 class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
     serializer_class = ScheduleSerializer
+    
+    def get_queryset(self):
+        # Always return all schedules for the calendar
+        return Schedule.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        user = request.user if request.user.is_authenticated else None
+        logging.info(
+            "[ScheduleViewSet.create] Called",
+            extra={
+                'user': getattr(user, 'username', None),
+                'data': request.data,
+                'ip': request.META.get('REMOTE_ADDR')
+            }
+        )
+        date_str = request.data.get('date')
+        if date_str:
+            try:
+                schedule_date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+            except Exception as ex:
+                logging.error(
+                    f"[ScheduleViewSet.create] Invalid date format: {date_str}",
+                    exc_info=True,
+                    extra={'user': getattr(user, 'username', None), 'data': request.data}
+                )
+                return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+            today = timezone.now().date()
+            if schedule_date < today:
+                logging.warning(
+                    f"[ScheduleViewSet.create] Attempt to schedule for a past date: {schedule_date}",
+                    extra={'user': getattr(user, 'username', None), 'data': request.data}
+                )
+                return Response({'error': 'Cannot schedule for a past date.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            response = super().create(request, *args, **kwargs)
+            logging.info(
+                "[ScheduleViewSet.create] Schedule created.",
+                extra={
+                    'user': getattr(user, 'username', None),
+                    'response': getattr(response, 'data', str(response)),
+                    'ip': request.META.get('REMOTE_ADDR')
+                }
+            )
+            return response
+        except Exception as ex:
+            logging.exception(
+                f"[ScheduleViewSet.create] Exception during schedule creation.",
+                extra={'user': getattr(user, 'username', None), 'data': request.data}
+            )
+            return Response({'error': 'An unexpected error occurred while creating the schedule.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, *args, **kwargs):
+        date_str = request.data.get('date')
+        logging.info(f"Schedule update called with data: {request.data}")
+        if date_str:
+            try:
+                schedule_date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+            except Exception:
+                logging.error("Invalid date format for schedule update.")
+                return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+            today = timezone.now().date()
+            if schedule_date < today:
+                logging.warning("Attempt to update schedule to a past date.")
+                return Response({'error': 'Cannot schedule for a past date.'}, status=status.HTTP_400_BAD_REQUEST)
+        response = super().update(request, *args, **kwargs)
+        logging.info(f"Schedule updated. Response: {getattr(response, 'data', response)}")
+        return response
+
+    def list(self, request, *args, **kwargs):
+        logging.info("Schedule list called.")
+        return super().list(request, *args, **kwargs)
 
 def all_users(request):
-    User = get_user_model()
     users = User.objects.all().values('id', 'email', 'first_name', 'last_name', 'account_type', 'role')
     return JsonResponse(list(users), safe=False)
-
-from django.contrib.auth import logout as auth_logout
 
 def complete_trip(request):
     user = request.user

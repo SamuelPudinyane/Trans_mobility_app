@@ -91,9 +91,12 @@ class ScheduleSerializer(serializers.ModelSerializer):
         if instance:
             qs = qs.exclude(pk=instance.pk)
         if qs.exists():
+            driver_name = f"{driver.first_name} {driver.last_name}".strip() if driver.first_name or driver.last_name else driver.email
+            shift_display = shift_type.upper() if shift_type else 'UNKNOWN'
+            date_display = date.strftime('%B %d, %Y') if date else 'UNKNOWN'
             raise serializers.ValidationError({
                 'non_field_errors': [
-                    'This driver is already scheduled for this date and shift. Please choose a different driver, date, or shift.'
+                    f"Schedule conflict: {driver_name} is already scheduled for {shift_display} shift on {date_display}. Please choose a different driver, date, or shift."
                 ]
             })
         return data

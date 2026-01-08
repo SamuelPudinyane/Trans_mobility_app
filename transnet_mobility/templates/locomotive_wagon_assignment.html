@@ -8,16 +8,17 @@
         /* Horizontal scroll for performance cards */
         .loco-scroll-container {
             display: flex;
-               flex-direction: column;
-               overflow-y: auto;
-               max-height: 600px;
-               gap: 24px;
+            flex-direction: row;
+            overflow-x: auto;
+            max-width: 100%;
+            width: 100%;
+            gap: 24px;
             -webkit-overflow-scrolling: touch;
         }
             .loco-scroll-card {
-                width: 100%;
+                flex: 1 1 340px;
                 min-width: 340px;
-                max-width: 480px;
+                max-width: 100%;
                 margin-bottom: 0;
                 box-shadow: 0 2px 8px rgba(40,0,0,0.07);
                 border-radius: 12px;
@@ -225,8 +226,8 @@
             </form>
         </div>
         
-        <div class="row">
-            <div class="loco-scroll-container">
+        <div class="row" style="width:100%;margin:0;">
+            <div class="loco-scroll-container" style="width:100%;">
             {% for loco_id, summary in loco_summaries.items %}
                 <div class="loco-scroll-card">
                     <div class="card h-100" style="border-left: 5px solid {% if summary.can_handle_status == 'optimal' %}#28a745{% elif summary.can_handle_status == 'marginal' or summary.can_handle_status == 'warning' %}#ffc107{% else %}#dc3545{% endif %};">
